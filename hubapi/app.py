@@ -44,7 +44,7 @@ def fetch_openapi_docs():
                 merged_api["components"]["schemas"].update(api_spec["components"]["schemas"])
 
         except requests.exceptions.RequestException as e:
-            print(f"⚠️ Failed to fetch {url}: {e}")
+            print(f"Failed to fetch {url}: {e}")
 
     return merged_api
 
