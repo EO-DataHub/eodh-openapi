@@ -14,7 +14,7 @@
 
 [project]
 name = "Hub-api"
-version = "0.1.11"
+version = "0.1.0"
 description = "Merges all openapi into single docs"
 readme = "README.md"
 
