@@ -16,7 +16,7 @@ container-push:
 
 .PHONY: run-dev
 run-dev:
-	uvicorn hubapi.__main__:app --host 0.0.0.0 --port 8000 --reload
+	fastapi run hubapi/app.py
 
 .PHONY: ruff
 ruff:

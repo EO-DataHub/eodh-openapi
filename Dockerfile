@@ -21,4 +21,5 @@ ADD pyproject.toml ./
 RUN --mount=type=cache,target=/root/.cache/pip pip3 install -r requirements.txt
 
 # Run the application
-CMD ["python", "-m", "hubapi"]
+CMD ["fastapi", "run", "hubapi/app.py"]
+

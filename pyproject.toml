@@ -66,7 +66,7 @@ classifiers = [
 # For an analysis of this field vs pip's requirements files see:
 # https://packaging.python.org/discussions/install-requires-vs-requirements/
 dependencies = [
-    "fastapi",
+    "fastapi[standard]",
     "requests",
     "uvicorn",
     "pyyaml"
@@ -119,10 +119,6 @@ markers = [
 [tool.setuptools]
 packages = []
 
-[tool.black]
-line-length = 100
-target-version = ['py311']
-
 [tool.ruff]
 line-length = 110
 target-version = "py311"
@@ -162,6 +158,3 @@ disable = '''
     too-many-instance-attributes,
     logging-fstring-interpolation,
 '''
-
-[tool.isort]
-profile = "black"
