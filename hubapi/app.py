@@ -1,8 +1,8 @@
 import os
-import yaml
+from dataclasses import dataclass, field
 
 import requests
-from dataclasses import dataclass, field
+import yaml
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
@@ -11,6 +11,7 @@ from fastapi.responses import RedirectResponse
 class Config:
     sources: list[str] = field(default_factory=list)
 
+
 def load_config(filename: str | None) -> Config:
     """Loads configuration from a YAML file."""
     if filename and os.path.exists(filename):
@@ -18,6 +19,7 @@ def load_config(filename: str | None) -> Config:
             config_data = yaml.safe_load(f)
             return Config(sources=config_data.get("sources", []))
     return Config()
+
 
 # Load config from the mounted ConfigMap file
 CONFIG_FILE = os.environ.get("CONFIG_FILE", "/config/config.yaml")
@@ -65,10 +67,12 @@ def fetch_openapi_docs():
 
     return merged_api
 
+
 @app.get("/")
 async def redirect_to_docs():
     """Redirects to /api/catalogue/docs."""
     return RedirectResponse(url="/api/catalogue/docs")
+
 
 # Override FastAPI’s OpenAPI function
 app.openapi = fetch_openapi_docs

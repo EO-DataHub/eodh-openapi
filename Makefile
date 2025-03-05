@@ -17,26 +17,20 @@ container-push:
 .PHONY: run-dev
 run-dev:
 	uvicorn hubapi.__main__:app --host 0.0.0.0 --port 8000 --reload
-	
-test:
-	./venv/bin/ptw CHANGEME-test-package-names
 
-testonce:
-	./venv/bin/pytest
-
+.PHONY: ruff
 ruff:
 	./venv/bin/ruff check .
 
-black:
-	./venv/bin/black .
-
-isort:
-	./venv/bin/isort . --profile black
+.PHONY: fmt
+fmt:
+	./venv/bin/ruff check . --select I --fix
+	./venv/bin/ruff format .
 
 validate-pyproject:
 	validate-pyproject pyproject.toml
 
-lint: ruff black isort validate-pyproject
+lint: ruff validate-pyproject
 
 requirements.txt: venv pyproject.toml
 	./venv/bin/pip-compile

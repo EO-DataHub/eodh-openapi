@@ -18,8 +18,8 @@ version = "0.1.0"
 description = "Merges all openapi into single docs"
 readme = "README.md"
 
-# Our target version is Python 3.12, but it may work with earlier versions.
-requires-python = ">=3.12"
+# Our target version is Python 3.10, but it may work with earlier versions.
+requires-python = ">=3.10"
 
 license = {file = "LICENSE"}
 
@@ -55,7 +55,7 @@ classifiers = [
   # "License :: Other/Proprietary License",
 
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3 :: Only",
 ]
 
@@ -86,6 +86,7 @@ dev = [
     "validate-pyproject[all]",
     "pre-commit",
     "moto",
+    "ruff"
 ]
 
 # List URLs that are relevant to your project
@@ -127,7 +128,7 @@ line-length = 110
 target-version = "py311"
 
 [tool.ruff.lint]
-select = ["E", "F", "B", "W", "I"]
+select = ["E", "F", "I"]
 
 exclude = [
     ".bzr",
