@@ -1,7 +1,7 @@
 .PHONY: dockerbuild dockerpush test testonce ruff black lint isort pre-commit-check requirements-update requirements setup
-IMAGENAME = hubapi
-DOCKERREPO ?= public.ecr.aws/eodh/eodhp-hubapi
-VERSION ?= 0.1.0
+docker ?= docker
+image ?= public.ecr.aws/eodh/eodhp-docs
+version ?= 0.1.0
 
 .SILENT:
 MAKEFLAGS += --no-print-directory
