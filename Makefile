@@ -1,15 +1,23 @@
 .PHONY: dockerbuild dockerpush test testonce ruff black lint isort pre-commit-check requirements-update requirements setup
-VERSION ?= latest
 IMAGENAME = hubapi
-DOCKERREPO ?= public.ecr.aws/eodh
+DOCKERREPO ?= public.ecr.aws/eodh/eodhp-hubapi
+VERSION ?= 0.1.0
 
-dockerbuild:
-	DOCKER_BUILDKIT=1 docker build -t ${IMAGENAME}:${VERSION} .
+.SILENT:
+MAKEFLAGS += --no-print-directory
 
-dockerpush: dockerbuild testdocker
-	docker tag ${IMAGENAME}:${VERSION} ${DOCKERREPO}/${IMAGENAME}:${VERSION}
-	docker push ${DOCKERREPO}/${IMAGENAME}:${VERSION}
+.PHONY: container-build
+container-build:
+	$(docker) build -t $(image):$(version) .
 
+.PHONY: container-push
+container-push:
+	$(docker) push $(image):$(version)
+
+.PHONY: run-dev
+run-dev:
+	uvicorn hubapi.__main__:app --host 0.0.0.0 --port 8000 --reload
+	
 test:
 	./venv/bin/ptw CHANGEME-test-package-names
 
@@ -44,7 +52,6 @@ requirements-update: venv
 
 venv:
 	virtualenv -p python3.11 venv
-	./venv/bin/python -m ensurepip -U
 	./venv/bin/pip3 install pip-tools
 
 .make-venv-installed: venv requirements.txt requirements-dev.txt

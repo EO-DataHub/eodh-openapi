@@ -18,7 +18,7 @@ version = "0.1.0"
 description = "Merges all openapi into single docs"
 readme = "README.md"
 
-# Our target version is Python 3.11, but it may work with earlier versions.
+# Our target version is Python 3.12, but it may work with earlier versions.
 requires-python = ">=3.12"
 
 license = {file = "LICENSE"}
@@ -55,7 +55,7 @@ classifiers = [
   # "License :: Other/Proprietary License",
 
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3 :: Only",
 ]
 
@@ -68,7 +68,8 @@ classifiers = [
 dependencies = [
     "fastapi",
     "requests",
-    "uvicorn"
+    "uvicorn",
+    "pyyaml"
 ]
 
 # List additional groups of dependencies here (e.g. development
@@ -82,13 +83,6 @@ dependencies = [
 [project.optional-dependencies] # Optional
 dev = [
     "pip-tools",
-    "pytest",
-    "pytest-xdist",
-    "pytest-mock",
-    "pytest-watcher",
-    "black",
-    "ruff",
-    "isort",
     "validate-pyproject[all]",
     "pre-commit",
     "moto",

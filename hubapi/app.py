@@ -1,8 +1,27 @@
 import os
+import yaml
 
 import requests
+from dataclasses import dataclass, field
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
+
+
+@dataclass
+class Config:
+    sources: list[str] = field(default_factory=list)
+
+def load_config(filename: str | None) -> Config:
+    """Loads configuration from a YAML file."""
+    if filename and os.path.exists(filename):
+        with open(filename, "r") as f:
+            config_data = yaml.safe_load(f)
+            return Config(sources=config_data.get("sources", []))
+    return Config()
+
+# Load config from the mounted ConfigMap file
+CONFIG_FILE = os.environ.get("CONFIG_FILE", "/config/config.yaml")
+config = load_config(CONFIG_FILE)
 
 app = FastAPI(
     title="Hub API Reference",
@@ -10,8 +29,6 @@ app = FastAPI(
     docs_url="/api/catalogue/docs",
     openapi_url="/api/catalogue/openapi.json",
 )
-
-OPENAPI_SOURCES = os.getenv("OPENAPI_SOURCES", "").split(",")
 
 
 def fetch_openapi_docs():
@@ -23,7 +40,7 @@ def fetch_openapi_docs():
         "components": {"schemas": {}},
     }
 
-    for url in OPENAPI_SOURCES:
+    for url in config.sources:
         url = url.strip()
         if not url:
             continue
@@ -48,12 +65,10 @@ def fetch_openapi_docs():
 
     return merged_api
 
-
 @app.get("/")
 async def redirect_to_docs():
     """Redirects to /api/catalogue/docs."""
     return RedirectResponse(url="/api/catalogue/docs")
-
 
 # Override FastAPI’s OpenAPI function
 app.openapi = fetch_openapi_docs
