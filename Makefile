@@ -18,8 +18,8 @@ container-push:
 run-dev:
 	fastapi run hubapi/app.py
 
-.PHONY: run-prod
-run-prod:
+.PHONY: run
+run:
 	fastapi run hubapi/app.py
 
 .PHONY: ruff
