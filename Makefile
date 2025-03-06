@@ -18,6 +18,10 @@ container-push:
 run-dev:
 	fastapi run hubapi/app.py
 
+.PHONY: run-prod
+run-prod:
+	fastapi run hubapi/app.py
+
 .PHONY: ruff
 ruff:
 	./venv/bin/ruff check .
