@@ -18,6 +18,9 @@ class APISource:
 class Config:
     title: str = "Hub API Reference"
     version: str = "1.0.0"
+    openapi_version: str = "3.1.0"
+    docs_url: str = "/api/catalogue/docs"
+    openapi_url: str = "/api/catalogue/openapi.json"
     sources: list[APISource] = field(default_factory=list)
 
 
@@ -27,14 +30,20 @@ def load_config(filename: str | None) -> Config:
         with open(filename, "r") as f:
             config_data = yaml.safe_load(f)
 
-            title = config_data.get("metadata", {}).get("title", "Hub API Reference")
-            version = config_data.get("metadata", {}).get("version", "1.0.0")
-
             sources = [
                 APISource(name=entry["name"], prefix=entry["prefix"], url=entry["url"])
                 for entry in config_data.get("sources", [])
             ]
-            return Config(title=title, version=version, sources=sources)
+
+            return Config(
+                title=config_data.get("config", {}).get("title", "Hub API Reference"),
+                version=config_data.get("config", {}).get("version", "1.0.0"),
+                openapi_version=config_data.get("config", {}).get("openapi_version", "3.1.0"),
+                docs_url=config_data.get("config", {}).get("docs_url", "/api/catalogue/docs"),
+                openapi_url=config_data.get("config", {}).get("openapi_url", "/api/catalogue/openapi.json"),
+                sources=sources,
+            )
+
     return Config()
 
 
@@ -45,15 +54,15 @@ config = load_config(CONFIG_FILE)
 app = FastAPI(
     title=config.title,
     version=config.version,
-    docs_url="/api/catalogue/docs",
-    openapi_url="/api/catalogue/openapi.json",
+    docs_url=config.docs_url,
+    openapi_url=config.openapi_url,
 )
 
 
 def fetch_openapi_docs():
     """Fetch and merge OpenAPI JSON dynamically from multiple sources with proper API grouping."""
     merged_api = {
-        "openapi": "3.1.0",
+        "openapi": config.openapi_version,
         "info": {"title": config.title, "version": config.version},
         "tags": [],
         "paths": {},
