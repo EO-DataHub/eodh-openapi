@@ -16,6 +16,8 @@ class APISource:
 
 @dataclass
 class Config:
+    title: str = "Hub API Reference"
+    version: str = "1.0.0"
     sources: list[APISource] = field(default_factory=list)
 
 
@@ -24,11 +26,15 @@ def load_config(filename: str | None) -> Config:
     if filename and os.path.exists(filename):
         with open(filename, "r") as f:
             config_data = yaml.safe_load(f)
+
+            title = config_data.get("metadata", {}).get("title", "Hub API Reference")
+            version = config_data.get("metadata", {}).get("version", "1.0.0")
+
             sources = [
                 APISource(name=entry["name"], prefix=entry["prefix"], url=entry["url"])
                 for entry in config_data.get("sources", [])
             ]
-            return Config(sources=sources)
+            return Config(title=title, version=version, sources=sources)
     return Config()
 
 
@@ -37,21 +43,21 @@ CONFIG_FILE = os.getenv("CONFIG_FILE", "/config/config.yaml")
 config = load_config(CONFIG_FILE)
 
 app = FastAPI(
-    title="Hub API Reference",
-    version="1.0.0",
+    title=config.title,
+    version=config.version,
     docs_url="/api/catalogue/docs",
     openapi_url="/api/catalogue/openapi.json",
 )
 
 
 def fetch_openapi_docs():
-    """Fetch and merge OpenAPI JSON dynamically from multiple sources, including authentication support."""
+    """Fetch and merge OpenAPI JSON dynamically from multiple sources with proper API grouping."""
     merged_api = {
         "openapi": "3.1.0",
-        "info": {"title": "Hub API Reference", "version": "1.0.0"},
+        "info": {"title": config.title, "version": config.version},
         "tags": [],
         "paths": {},
-        "components": {"schemas": {}, "securitySchemes": {}},  # Ensure securitySchemes is included
+        "components": {"schemas": {}, "securitySchemes": {}},
         "security": [],
     }
 
@@ -61,17 +67,17 @@ def fetch_openapi_docs():
             response.raise_for_status()
             api_spec = response.json()
 
-            # Add a tag for this API in Swagger UI (only if not already added)
+            # Add a tag for this API if it's not already present
             if not any(tag["name"] == source.name for tag in merged_api["tags"]):
                 merged_api["tags"].append(
                     {"name": source.name, "description": f"Endpoints from {source.name}"}
                 )
 
-            # Merge security schemes (if any)
+            # Merge security schemes if present
             if "components" in api_spec and "securitySchemes" in api_spec["components"]:
                 merged_api["components"]["securitySchemes"].update(api_spec["components"]["securitySchemes"])
 
-            # Merge paths using the defined prefix
+            # Process paths
             if "paths" in api_spec:
                 for path, methods in api_spec["paths"].items():
                     new_path = f"{source.prefix}{path}" if not path.startswith(source.prefix) else path
@@ -79,8 +85,10 @@ def fetch_openapi_docs():
                         merged_api["paths"][new_path] = {}
 
                     for method, details in methods.items():
-                        details.setdefault("tags", []).append(source.name)
+                        # **Automatically assign tags based on prefix**
+                        details["tags"] = [source.name]
 
+                        # Preserve security definitions if present
                         if "security" in api_spec:
                             details.setdefault("security", api_spec["security"])
 
@@ -91,7 +99,7 @@ def fetch_openapi_docs():
                 merged_api["components"]["schemas"].update(api_spec["components"]["schemas"])
 
         except requests.exceptions.RequestException as e:
-            print(f"⚠️ Failed to fetch {source.url}: {e}")
+            print(f"Failed to fetch {source.url}: {e}")
 
     return merged_api
 
