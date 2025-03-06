@@ -45,13 +45,14 @@ app = FastAPI(
 
 
 def fetch_openapi_docs():
-    """Fetch and merge OpenAPI JSON dynamically from multiple sources."""
+    """Fetch and merge OpenAPI JSON dynamically from multiple sources, including authentication support."""
     merged_api = {
         "openapi": "3.1.0",
         "info": {"title": "Hub API Reference", "version": "1.0.0"},
         "tags": [],
         "paths": {},
-        "components": {"schemas": {}},
+        "components": {"schemas": {}, "securitySchemes": {}},  # Ensure securitySchemes is included
+        "security": [],
     }
 
     for source in config.sources:
@@ -66,6 +67,10 @@ def fetch_openapi_docs():
                     {"name": source.name, "description": f"Endpoints from {source.name}"}
                 )
 
+            # Merge security schemes (if any)
+            if "components" in api_spec and "securitySchemes" in api_spec["components"]:
+                merged_api["components"]["securitySchemes"].update(api_spec["components"]["securitySchemes"])
+
             # Merge paths using the defined prefix
             if "paths" in api_spec:
                 for path, methods in api_spec["paths"].items():
@@ -74,7 +79,11 @@ def fetch_openapi_docs():
                         merged_api["paths"][new_path] = {}
 
                     for method, details in methods.items():
-                        details.setdefault("tags", []).append(source.name)  # Assign tag to this endpoint
+                        details.setdefault("tags", []).append(source.name)
+
+                        if "security" in api_spec:
+                            details.setdefault("security", api_spec["security"])
+
                         merged_api["paths"][new_path][method] = details
 
             # Merge schemas
