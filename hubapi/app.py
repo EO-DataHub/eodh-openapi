@@ -45,7 +45,7 @@ app = FastAPI(
 
 
 def fetch_openapi_docs():
-    """Fetch and merge OpenAPI JSON dynamically from multiple sources with proper API grouping."""
+    """Fetch and merge OpenAPI JSON dynamically from multiple sources."""
     merged_api = {
         "openapi": "3.1.0",
         "info": {"title": "Hub API Reference", "version": "1.0.0"},
@@ -60,27 +60,24 @@ def fetch_openapi_docs():
             response.raise_for_status()
             api_spec = response.json()
 
-            # Add a section/tag for each API in Swagger UI
-            if {"name": source.name, "description": f"{source.name} API"} not in merged_api["tags"]:
-                merged_api["tags"].append({"name": source.name, "description": f"{source.name} API"})
+            # Add a tag for this API in Swagger UI (only if not already added)
+            if not any(tag["name"] == source.name for tag in merged_api["tags"]):
+                merged_api["tags"].append(
+                    {"name": source.name, "description": f"Endpoints from {source.name}"}
+                )
 
-            # Merge paths using the defined prefix, and tag each endpoint under its API
+            # Merge paths using the defined prefix
             if "paths" in api_spec:
                 for path, methods in api_spec["paths"].items():
                     new_path = f"{source.prefix}{path}" if not path.startswith(source.prefix) else path
-                    if source.name == "ADES":
-                        new_path = f"/ades{path}"
-
-                    merged_api["paths"].setdefault(new_path, {})
+                    if new_path not in merged_api["paths"]:
+                        merged_api["paths"][new_path] = {}
 
                     for method, details in methods.items():
-                        if "tags" not in details:
-                            details["tags"] = []
-                        details["tags"].append(source.name)
-
+                        details.setdefault("tags", []).append(source.name)  # Assign tag to this endpoint
                         merged_api["paths"][new_path][method] = details
 
-            # Merge schemas into OpenAPI components
+            # Merge schemas
             if "components" in api_spec and "schemas" in api_spec["components"]:
                 merged_api["components"]["schemas"].update(api_spec["components"]["schemas"])
 
@@ -96,5 +93,5 @@ async def redirect_to_docs():
     return RedirectResponse(url="/api/catalogue/docs")
 
 
-# Override FastAPI’s OpenAPI function to apply grouped docs
+# Override FastAPI’s OpenAPI function
 app.openapi = fetch_openapi_docs
