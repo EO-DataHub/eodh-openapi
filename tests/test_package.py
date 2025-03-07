@@ -12,14 +12,20 @@ client = TestClient(app)
 MOCK_STAC_RESPONSE = {
     "openapi": "3.1.0",
     "info": {"title": "STAC API", "version": "1.0.0"},
-    "paths": {"/": {"get": {"summary": "Landing Page"}}, "/search": {"get": {"summary": "Search Items"}}},
+    "paths": {
+        "/": {"get": {"summary": "Landing Page"}},
+        "/search": {"get": {"summary": "Search Items"}},
+    },
     "components": {"schemas": {"Item": {}}},
 }
 
 MOCK_ADES_RESPONSE = {
     "openapi": "3.1.0",
     "info": {"title": "ADES API", "version": "1.0.0"},
-    "paths": {"/": {"get": {"summary": "ADES Root"}}, "/processes": {"get": {"summary": "List Processes"}}},
+    "paths": {
+        "/": {"get": {"summary": "ADES Root"}},
+        "/processes": {"get": {"summary": "List Processes"}},
+    },
     "components": {"schemas": {"Process": {}}},
 }
 
@@ -34,7 +40,9 @@ def mock_config():
         docs_url="/api/catalogue/docs",
         openapi_url="/api/catalogue/openapi.json",
         sources=[
-            APISource(name="STAC FastAPI", prefix="/api/catalogue/stac", url="https://mock-stac/api"),
+            APISource(
+                name="STAC FastAPI", prefix="/api/catalogue/stac", url="https://mock-stac/api"
+            ),
             APISource(name="ADES", prefix="/ades", url="https://mock-ades/api"),
         ],
     )

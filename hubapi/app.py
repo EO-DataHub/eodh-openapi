@@ -81,12 +81,17 @@ def fetch_openapi_docs():
 
             # Merge security schemes if present
             if "components" in api_spec and "securitySchemes" in api_spec["components"]:
-                merged_api["components"]["securitySchemes"].update(api_spec["components"]["securitySchemes"])
+                merged_api["components"]["securitySchemes"].update(
+                    api_spec["components"]["securitySchemes"]
+                )
 
             # Process paths
             if "paths" in api_spec:
+
                 for path, methods in api_spec["paths"].items():
-                    new_path = f"{source.prefix}{path}" if not path.startswith(source.prefix) else path
+                    new_path = (
+                        f"{source.prefix}{path}" if not path.startswith(source.prefix) else path
+                    )
                     if new_path not in merged_api["paths"]:
                         merged_api["paths"][new_path] = {}
 
