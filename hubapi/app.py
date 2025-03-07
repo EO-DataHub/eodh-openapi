@@ -47,6 +47,7 @@ def load_config(filename: str | None) -> Config:
 CONFIG_FILE = os.getenv("CONFIG_FILE", "/config/config.yaml")
 config = load_config(CONFIG_FILE)
 
+
 app = FastAPI(
     title=config.title,
     version=config.version,

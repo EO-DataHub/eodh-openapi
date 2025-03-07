@@ -106,7 +106,7 @@ def test_load_config(mocker):
     with (
         patch("builtins.open", mocker.mock_open(read_data=mock_yaml_content)),
         patch("os.getenv", return_value="/mock/config.yaml"),
-        patch("os.path.exists", return_value=True), 
+        patch("os.path.exists", return_value=True),
     ):
         config = load_config("/mock/config.yaml")
 
