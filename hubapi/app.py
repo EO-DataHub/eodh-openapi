@@ -87,7 +87,6 @@ def fetch_openapi_docs():
 
             # Process paths
             if "paths" in api_spec:
-
                 for path, methods in api_spec["paths"].items():
                     new_path = (
                         f"{source.prefix}{path}" if not path.startswith(source.prefix) else path

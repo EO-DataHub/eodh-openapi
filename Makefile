@@ -31,6 +31,12 @@ fmt:
 	./venv/bin/ruff check . --select I --fix
 	./venv/bin/ruff format .
 
+black:
+	./venv/bin/black .
+
+isort:
+	./venv/bin/isort . --profile black
+
 test:
 	./venv/bin/ptw eodhp_docs
 
@@ -40,7 +46,7 @@ testonce:
 validate-pyproject:
 	validate-pyproject pyproject.toml
 
-lint: ruff validate-pyproject
+lint: ruff black isort validate-pyproject
 
 requirements.txt: venv pyproject.toml
 	./venv/bin/pip-compile
