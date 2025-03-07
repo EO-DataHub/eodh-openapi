@@ -1,18 +1,19 @@
 .PHONY: dockerbuild dockerpush test testonce ruff lint pre-commit-check requirements-update requirements setup
-docker ?= docker
-image ?= public.ecr.aws/eodh/eodhp-docs
-version ?= 0.1.0
+DOCKER ?= docker
+IMAGENAME ?= eodhp-docs
+DOCKERREPO ?= public.ecr.aws/eodh
+VERSION ?= 0.1.0
 
 .SILENT:
 MAKEFLAGS += --no-print-directory
 
 .PHONY: container-build
 container-build:
-	$(docker) build -t $(image):$(version) .
+	$(DOCKER) build -t $(DOCKERREPO)/${IMAGENAME}:$(VERSION) .
 
 .PHONY: container-push
 container-push:
-	$(docker) push $(image):$(version)
+	$(DOCKER) push $(DOCKERREPO)/${IMAGENAME}:$(VERSION)
 
 .PHONY: run-dev
 run-dev:
@@ -31,12 +32,6 @@ fmt:
 	./venv/bin/ruff check . --select I --fix
 	./venv/bin/ruff format .
 
-black:
-	./venv/bin/black .
-
-isort:
-	./venv/bin/isort . --profile black
-
 test:
 	./venv/bin/ptw eodhp_docs
 
@@ -46,7 +41,7 @@ testonce:
 validate-pyproject:
 	validate-pyproject pyproject.toml
 
-lint: ruff black isort validate-pyproject
+lint: ruff validate-pyproject
 
 requirements.txt: venv pyproject.toml
 	./venv/bin/pip-compile
