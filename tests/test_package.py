@@ -58,7 +58,7 @@ def mock_requests_get(mocker):
 
 def test_fetch_openapi_docs(mock_config, mock_requests_get):
     """Test OpenAPI merging logic with mocked API responses."""
-    with patch("hubapi.app.config", mock_config):  # FIXED MODULE PATH
+    with patch("hubapi.app.config", mock_config):
         merged_openapi = fetch_openapi_docs()
 
     assert merged_openapi["info"]["title"] == "Hub API Reference"
@@ -83,8 +83,7 @@ def test_docs_redirect():
     """Test that root URL redirects to /api/catalogue/docs."""
     response = client.get("/")
 
-    # FIXED: Some versions of FastAPI don't return 307
-    assert response.status_code in [200, 307]  # Accept both cases
+    assert response.status_code in [200, 307]
 
     if response.status_code == 307:
         assert response.headers["location"] == "/api/catalogue/docs"
@@ -107,11 +106,11 @@ def test_load_config(mocker):
     with (
         patch("builtins.open", mocker.mock_open(read_data=mock_yaml_content)),
         patch("os.getenv", return_value="/mock/config.yaml"),
-        patch("os.path.exists", return_value=True),  # Add this to force reading the file
+        patch("os.path.exists", return_value=True), 
     ):
         config = load_config("/mock/config.yaml")
 
-    assert config.title == "Test API"  # Now should correctly match
+    assert config.title == "Test API"
     assert config.version == "2.0.0"
     assert config.docs_url == "/test/docs"
     assert config.openapi_url == "/test/openapi.json"
