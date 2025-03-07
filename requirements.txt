@@ -4,3 +4,37 @@
 #
 #    pip-compile
 #
+annotated-types==0.7.0
+    # via pydantic
+anyio==4.8.0
+    # via starlette
+certifi==2025.1.31
+    # via requests
+charset-normalizer==3.4.1
+    # via requests
+fastapi==0.115.11
+    # via Hub-api (pyproject.toml)
+idna==3.10
+    # via
+    #   anyio
+    #   requests
+pydantic==2.10.6
+    # via fastapi
+pydantic-core==2.27.2
+    # via pydantic
+pyyaml==6.0.2
+    # via Hub-api (pyproject.toml)
+requests==2.32.3
+    # via Hub-api (pyproject.toml)
+sniffio==1.3.1
+    # via anyio
+starlette==0.46.0
+    # via fastapi
+typing-extensions==4.12.2
+    # via
+    #   anyio
+    #   fastapi
+    #   pydantic
+    #   pydantic-core
+urllib3==2.3.0
+    # via requests
