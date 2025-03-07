@@ -1,4 +1,4 @@
-.PHONY: dockerbuild dockerpush test testonce ruff black lint isort pre-commit-check requirements-update requirements setup
+.PHONY: dockerbuild dockerpush test testonce ruff lint pre-commit-check requirements-update requirements setup
 docker ?= docker
 image ?= public.ecr.aws/eodh/eodhp-docs
 version ?= 0.1.0
