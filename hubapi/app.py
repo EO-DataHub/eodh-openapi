@@ -29,21 +29,17 @@ def load_config(filename: str | None) -> Config:
     if filename and os.path.exists(filename):
         with open(filename, "r") as f:
             config_data = yaml.safe_load(f)
-
-            sources = [
-                APISource(name=entry["name"], prefix=entry["prefix"], url=entry["url"])
-                for entry in config_data.get("sources", [])
-            ]
-
             return Config(
-                title=config_data.get("config", {}).get("title", "Hub API Reference"),
-                version=config_data.get("config", {}).get("version", "1.0.0"),
-                openapi_version=config_data.get("config", {}).get("openapi_version", "3.1.0"),
-                docs_url=config_data.get("config", {}).get("docs_url", "/api/catalogue/docs"),
-                openapi_url=config_data.get("config", {}).get("openapi_url", "/api/catalogue/openapi.json"),
-                sources=sources,
+                title=config_data.get("title", "Hub API Reference"),
+                version=config_data.get("version", "1.0.0"),
+                openapi_version=config_data.get("openapi_version", "3.1.0"),
+                docs_url=config_data.get("docs_url", "/api/catalogue/docs"),
+                openapi_url=config_data.get("openapi_url", "/api/catalogue/openapi.json"),
+                sources=[
+                    APISource(name=entry["name"], prefix=entry["prefix"], url=entry["url"])
+                    for entry in config_data.get("sources", [])
+                ],
             )
-
     return Config()
 
 

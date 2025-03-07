@@ -31,6 +31,12 @@ fmt:
 	./venv/bin/ruff check . --select I --fix
 	./venv/bin/ruff format .
 
+test:
+	./venv/bin/ptw eodhp_docs
+
+testonce:
+	./venv/bin/pytest
+
 validate-pyproject:
 	validate-pyproject pyproject.toml
 

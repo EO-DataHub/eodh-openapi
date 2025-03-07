@@ -83,6 +83,10 @@ dependencies = [
 [project.optional-dependencies] # Optional
 dev = [
     "pip-tools",
+    "pytest", 
+    "pytest-xdist", 
+    "pytest-mock", 
+    "pytest-watcher",
     "validate-pyproject[all]",
     "pre-commit",
     "moto",
