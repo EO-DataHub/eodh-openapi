@@ -13,9 +13,9 @@
 # limitations under the License.
 
 [project]
-name = "Hub-api"
+name = "eodh-openapi"
 version = "0.1.0"
-description = "Merges all openapi into single docs"
+description = "OpenAPI docs for UK EO DataHub. Merges OpenAPI docs from multiple sources into one deployment."
 readme = "README.md"
 
 # Our target version is Python 3.10, but it may work with earlier versions.
@@ -66,7 +66,7 @@ classifiers = [
 # For an analysis of this field vs pip's requirements files see:
 # https://packaging.python.org/discussions/install-requires-vs-requirements/
 dependencies = [
-    "fastapi>=0.95.0",
+    "fastapi[standard]>=0.95.0",
     "requests",
     "pyyaml"
 ]
@@ -79,7 +79,7 @@ dependencies = [
 #
 # Similar to `dependencies` above, these must be valid existing
 # projects.
-[project.optional-dependencies] # Optional
+[dependency-groups]
 dev = [
     "pip-tools",
     "pytest", 

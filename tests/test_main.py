@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from hubapi.app import APISource, Config, app, fetch_openapi_docs, load_config
+from main import APISource, Config, app, fetch_openapi_docs, load_config
 
 # Initialize FastAPI test client
 client = TestClient(app)
@@ -40,9 +40,7 @@ def mock_config():
         docs_url="/api/catalogue/docs",
         openapi_url="/api/catalogue/openapi.json",
         sources=[
-            APISource(
-                name="STAC FastAPI", prefix="/api/catalogue/stac", url="https://mock-stac/api"
-            ),
+            APISource(name="STAC FastAPI", prefix="/api/catalogue/stac", url="https://mock-stac/api"),
             APISource(name="ADES", prefix="/ades", url="https://mock-ades/api"),
         ],
     )
@@ -66,7 +64,7 @@ def mock_requests_get(mocker):
 
 def test_fetch_openapi_docs(mock_config, mock_requests_get):
     """Test OpenAPI merging logic with mocked API responses."""
-    with patch("hubapi.app.config", mock_config):
+    with patch("main.config", mock_config):
         merged_openapi = fetch_openapi_docs()
 
     assert merged_openapi["info"]["title"] == "Hub API Reference"

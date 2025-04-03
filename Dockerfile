@@ -10,16 +10,17 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update -y && apt-get upgrade -y
 
 # Set working directory inside the container
-WORKDIR /hubapi
-
-# Copy necessary files
-ADD LICENSE requirements.txt ./
-ADD hubapi ./hubapi/
-ADD pyproject.toml ./
+WORKDIR /app
 
 # Install dependencies
+ADD LICENSE requirements.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip pip3 install -r requirements.txt
 
+# Copy necessary files
+ADD main.py ./
+ADD pyproject.toml ./
+
 # Run the application
-CMD ["fastapi", "run", "hubapi/app.py"]
+EXPOSE 8000
+ENTRYPOINT ["fastapi", "run", "main.py", "--port=8000"]
 

@@ -1,60 +1,63 @@
-.PHONY: dockerbuild dockerpush test testonce ruff lint pre-commit-check requirements-update requirements setup
-DOCKER ?= docker
-IMAGENAME ?= eodhp-docs
-DOCKERREPO ?= public.ecr.aws/eodh
-VERSION ?= 0.1.0
+docker ?= docker
+image ?= public.ecr.aws/eodh/eodh-openapi
+version ?= 0.1.0
+port ?= 8000
 
 .SILENT:
 MAKEFLAGS += --no-print-directory
 
+.PHONY: run-dev
+run-dev:
+	fastapi dev main.py --port=$(port)
+
 .PHONY: container-build
 container-build:
-	$(DOCKER) build -t $(DOCKERREPO)/${IMAGENAME}:$(VERSION) .
+	$(docker) build -t $(image):$(version) .
 
 .PHONY: container-push
 container-push:
-	$(DOCKER) push $(DOCKERREPO)/${IMAGENAME}:$(VERSION)
+	$(docker) push $(image):$(version)
 
-.PHONY: run-dev
-run-dev:
-	fastapi run hubapi/app.py
+.PHONY: publish
+publish: container-build container-push
 
-.PHONY: run
-run:
-	fastapi run hubapi/app.py
-
-.PHONY: ruff
-ruff:
-	./venv/bin/ruff check .
+.PHONY: check
+check:
+	ruff check . --select I --fix
 
 .PHONY: fmt
 fmt:
-	./venv/bin/ruff check . --select I --fix
-	./venv/bin/ruff format .
+	ruff format .
 
+.PHONY: test
 test:
-	./venv/bin/ptw eodhp_docs
+	python -m pytest -v .
 
-testonce:
-	./venv/bin/pytest
-
+.PHONY: validate-pyproject
 validate-pyproject:
 	validate-pyproject pyproject.toml
 
-lint: ruff validate-pyproject
+.PHONY: lint
+lint: ruff fmt validate-pyproject
 
-requirements.txt: venv pyproject.toml
-	./venv/bin/pip-compile
+.PHONY: requirements.txt
+requirements.txt:
+	pip-compile -q --strip-extras
 
-requirements-dev.txt: venv pyproject.toml
-	./venv/bin/pip-compile --extra dev -o requirements-dev.txt
+.PHONY: requirements-dev.txt
+requirements-dev.txt:
+	pip-compile -q --strip-extras --extra dev -o requirements-dev.txt
 
+.PHONY: requirements
 requirements: requirements.txt requirements-dev.txt
 
+.PHONY: requirements-update
 requirements-update: venv
 	./venv/bin/pip-compile -U
 	./venv/bin/pip-compile --extra dev -o requirements-dev.txt -U
 
+
+.PHONY: venv
 venv:
 	virtualenv -p python3.11 venv
 	./venv/bin/pip3 install pip-tools
@@ -67,4 +70,5 @@ venv:
 	./venv/bin/pre-commit install
 	curl -o .pre-commit-config.yaml https://raw.githubusercontent.com/EO-DataHub/github-actions/main/.pre-commit-config-python.yaml
 
+.PHONY: setup
 setup: venv requirements .make-venv-installed .git/hooks/pre-commit
