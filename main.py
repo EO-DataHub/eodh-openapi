@@ -16,11 +16,11 @@ class APISource:
 
 @dataclass
 class Config:
-    title: str = "Hub API Reference"
-    version: str = "1.0.0"
-    openapi_version: str = "3.1.0"
-    docs_url: str = "/api/catalogue/docs"
-    openapi_url: str = "/api/catalogue/openapi.json"
+    title: str
+    version: str
+    openapi_version: str
+    docs_url: str
+    openapi_url: str
     sources: list[APISource] = field(default_factory=list)
 
 
@@ -30,11 +30,11 @@ def load_config(filename: str | None) -> Config:
         with open(filename, "r") as f:
             config_data = yaml.safe_load(f)
             return Config(
-                title=config_data.get("title", "Hub API Reference"),
-                version=config_data.get("version", "1.0.0"),
+                title=config_data.get("title"),
+                version=config_data.get("version"),
                 openapi_version=config_data.get("openapi_version", "3.1.0"),
-                docs_url=config_data.get("docs_url", "/api/catalogue/docs"),
-                openapi_url=config_data.get("openapi_url", "/api/catalogue/openapi.json"),
+                docs_url=config_data.get("docs_url", "/docs"),
+                openapi_url=config_data.get("openapi_url", "/docs/openapi.json"),
                 sources=[
                     APISource(name=entry["name"], prefix=entry["prefix"], url=entry["url"])
                     for entry in config_data.get("sources", [])
@@ -71,41 +71,39 @@ def fetch_openapi_docs():
         try:
             response = requests.get(source.url)
             response.raise_for_status()
-            api_spec = response.json()
-
-            # Add a tag for this API if it's not already present
-            if not any(tag["name"] == source.name for tag in merged_api["tags"]):
-                merged_api["tags"].append(
-                    {"name": source.name, "description": f"Endpoints from {source.name}"}
-                )
-
-            # Merge security schemes if present
-            if "components" in api_spec and "securitySchemes" in api_spec["components"]:
-                merged_api["components"]["securitySchemes"].update(api_spec["components"]["securitySchemes"])
-
-            # Process paths
-            if "paths" in api_spec:
-                for path, methods in api_spec["paths"].items():
-                    new_path = f"{source.prefix}{path}" if not path.startswith(source.prefix) else path
-                    if new_path not in merged_api["paths"]:
-                        merged_api["paths"][new_path] = {}
-
-                    for method, details in methods.items():
-                        # **Automatically assign tags based on prefix**
-                        details["tags"] = [source.name]
-
-                        # Preserve security definitions if present
-                        if "security" in api_spec:
-                            details.setdefault("security", api_spec["security"])
-
-                        merged_api["paths"][new_path][method] = details
-
-            # Merge schemas
-            if "components" in api_spec and "schemas" in api_spec["components"]:
-                merged_api["components"]["schemas"].update(api_spec["components"]["schemas"])
-
         except requests.exceptions.RequestException as e:
             print(f"Failed to fetch {source.url}: {e}")
+        else:
+            api_spec = response.json()
+
+        # Add a tag for this API if it's not already present
+        if not any(tag["name"] == source.name for tag in merged_api["tags"]):
+            merged_api["tags"].append({"name": source.name, "description": f"Endpoints from {source.name}"})
+
+        # Merge security schemes if present
+        if "components" in api_spec and "securitySchemes" in api_spec["components"]:
+            merged_api["components"]["securitySchemes"].update(api_spec["components"]["securitySchemes"])
+
+        # Process paths
+        if "paths" in api_spec:
+            for path, methods in api_spec["paths"].items():
+                new_path = f"{source.prefix}{path}" if not path.startswith(source.prefix) else path
+                if new_path not in merged_api["paths"]:
+                    merged_api["paths"][new_path] = {}
+
+                for method, details in methods.items():
+                    # **Automatically assign tags based on prefix**
+                    details["tags"] = [source.name]
+
+                    # Preserve security definitions if present
+                    if "security" in api_spec:
+                        details.setdefault("security", api_spec["security"])
+
+                    merged_api["paths"][new_path][method] = details
+
+        # Merge schemas
+        if "components" in api_spec and "schemas" in api_spec["components"]:
+            merged_api["components"]["schemas"].update(api_spec["components"]["schemas"])
 
     return merged_api
 
