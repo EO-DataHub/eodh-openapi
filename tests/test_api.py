@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from main import APISource, Config, app, fetch_openapi_docs, load_config
+from eodh_openapi import APISource, Config, app, fetch_openapi_docs, load_config
 
 # Initialize FastAPI test client
 client = TestClient(app)
