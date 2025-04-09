@@ -2,12 +2,13 @@ import json
 import logging
 import os.path
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TypedDict
 
 import click
+import uvicorn
 import yaml
 
-from . import utils
+from . import utils, web
 from .log import logger
 
 
@@ -15,8 +16,13 @@ from .log import logger
 class Config:
     @dataclass
     class APISource:
+        class Server(TypedDict):
+            url: str
+            description: str
+
         url: str
         prefix: str = ""
+        servers: list[Server] = field(default_factory=list)
 
     base_url: str
     merge_keys: list[str] = field(default_factory=list)
@@ -35,7 +41,11 @@ class Config:
             base_url=config_data["base_url"],
             merge_keys=config_data.get("merge_keys", []),
             sources=[
-                Config.APISource(url=source["url"], prefix=source.get("prefix", ""))
+                Config.APISource(
+                    url=source["url"],
+                    prefix=source.get("prefix", ""),
+                    servers=source.get("servers", []),
+                )
                 for source in config_data.get("sources", [])
             ],
         )
@@ -99,6 +109,9 @@ def merge(config_file: str, output_file: str):
         new_paths: dict[str, Any] = {}
         for k, v in paths.items():
             new_paths[f"{source.prefix}{k}"] = v
+            new_paths[f"{source.prefix}{k}"].setdefault("servers", []).extend(
+                source.servers
+            )  # Add source servers to the paths, if any
         other["paths"] = new_paths
 
         # Merge specified keys of the OpenAPI spec
@@ -118,6 +131,47 @@ def merge(config_file: str, output_file: str):
             yaml.dump(spec, f, sort_keys=False)
         else:
             json.dump(spec, f, indent=2)
+
+
+@spec.command()
+@click.option("--title", "title", default="OpenAPI Spec", help="Title of the app")
+@click.option(
+    "--spec", "spec_file", default="openapi.json", help="Path to the OpenAPI spec"
+)
+@click.option("-h", "--host", "host", default="0.0.0.0", help="Host to serve app on")
+@click.option("-p", "--port", "port", default=8000, help="Port to serve app on")
+@click.option("--base-path", "base_path", default="", help="Base path to serve the app")
+@click.option(
+    "--static-dir",
+    "static_dir",
+    default=None,
+    help="Path to the static files directory",
+)
+@click.option("--log-level", "log_level", default="info", help="Log level of the app")
+def serve(
+    title: str,
+    spec_file: str,
+    host: str,
+    port: int,
+    base_path: str,
+    static_dir: str,
+    log_level: str,
+):
+    """
+    Serve the OpenAPI spec as a FastAPI app.
+    """
+    app = web.create_app(
+        title=title,
+        base_path=base_path,
+        static_dir=static_dir,
+        openapi_spec=spec_file,
+    )
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        log_level=log_level,
+    )
 
 
 if __name__ == "__main__":
