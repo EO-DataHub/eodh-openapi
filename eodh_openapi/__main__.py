@@ -1,126 +1,123 @@
 import json
 import logging
-import os
-import re
+import os.path
 from dataclasses import dataclass, field
 from typing import Any
 
 import click
-import requests
 import yaml
 
-from . import OpenAPISpec
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=os.environ.get("LOGLEVEL", "INFO").upper(),
-    handlers=[logging.StreamHandler()],
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-
-HTTP_PATTERN = re.compile(r"^(http|https)://", re.IGNORECASE)
-FILE_PATTERN = re.compile(r"^(file)://", re.IGNORECASE)
-
-
-@dataclass
-class APISource:
-    name: str
-    prefix: str
-    url: str
+from . import utils
+from .log import logger
 
 
 @dataclass
 class Config:
-    title: str
-    version: str
-    openapi_version: str
-    docs_url: str
-    openapi_url: str
-    description: str = None
-    tags: list[dict[str, Any]] = field(default_factory=list)
+    @dataclass
+    class APISource:
+        url: str
+        prefix: str = ""
+
+    base_url: str
+    merge_keys: list[str] = field(default_factory=list)
     sources: list[APISource] = field(default_factory=list)
 
     @staticmethod
     def load(filename: str) -> "Config":
         try:
             with open(filename, "r") as f:
-                config_data = yaml.safe_load(f)
+                config_data: dict = yaml.safe_load(f)
         except FileNotFoundError:
             logging.error(f"Config file {filename} not found.")
             raise
 
         return Config(
-            title=config_data["title"],
-            version=config_data["version"],
-            openapi_version=config_data.get("openapi_version", "3.1.0"),
-            docs_url=config_data.get("docs_url", "/docs"),
-            openapi_url=config_data.get("openapi_url", "/docs/openapi.json"),
+            base_url=config_data["base_url"],
+            merge_keys=config_data.get("merge_keys", []),
             sources=[
-                APISource(name=entry["name"], prefix=entry["prefix"], url=entry["url"])
-                for entry in config_data.get("sources", [])
+                Config.APISource(url=source["url"], prefix=source.get("prefix", ""))
+                for source in config_data.get("sources", [])
             ],
         )
 
 
 @click.group()
-@click.option("--config", default="config.yaml", help="Path to the config file.")
-@click.pass_context
-def cli(ctx, config: str):
-    ctx.ensure_object(dict)
-    ctx.obj["config"] = Config.load(config)
+def cli():
+    pass
 
 
-@cli.command()
-@click.pass_context
-def merge(ctx):
-    config: Config = ctx.obj["config"]
+@cli.group()
+def spec():
+    pass
 
-    # Initialise the OpenAPI spec object from the input config file
-    spec = OpenAPISpec(
-        openapi=config.openapi_version,
-        info=OpenAPISpec.Info(
-            title=config.title,
-            version=config.version,
-            description=config.description,
-        ),
-        tags=config.tags,
-    )
+
+@spec.command()
+@click.option(
+    "-c",
+    "--config",
+    "config_file",
+    default="config.yaml",
+    help="Path to the config file",
+    show_default=True,
+)
+@click.option(
+    "-o",
+    "--output",
+    "output_file",
+    default="openapi.yaml",
+    help="Output filename",
+    show_default=True,
+)
+def merge(config_file: str, output_file: str):
+    """
+    Merge OpenAPI specs from multiple sources into a single spec.
+    """
+    config = Config.load(config_file)
+    logger.info(f"Loaded config from {config_file}")
+
+    # Load base OpenAPI spec
+    try:
+        spec = utils.load_spec(config.base_url)
+    except Exception as e:
+        logger.error(f"Failed to load base OpenAPI spec: {e}")
+        raise
+    else:
+        logger.info(f"Loaded base OpenAPI spec from {config.base_url}")
 
     # Merge all sources into the OpenAPI spec
     for source in config.sources:
-        match source:
-            case _ if HTTP_PATTERN.match(source.url):
-                spec_data = fetch_http_spec(source.url)
-            case _ if FILE_PATTERN.match(source.url):
-                spec_data = load_file_spec(source.url)
-            case _:
-                logger.warning(f"Unknown source type for {source.url}. Skipping.")
-                continue
+        try:
+            other = utils.load_spec(source.url)
+        except Exception as e:
+            logger.error(f"Failed to load spec from {source.url}: {e}. Skipping.")
+            continue
+        else:
+            logger.info(f"Merging spec from {source.url} into base spec.")
 
-        other_spec = OpenAPISpec(**spec_data)
-        spec.merge(spec_data, other_spec)
+        # Overwrite existing paths in other with paths with source prefix
+        paths: dict[str, Any] = other.setdefault("paths", {})
+        new_paths: dict[str, Any] = {}
+        for k, v in paths.items():
+            new_paths[f"{source.prefix}{k}"] = v
+        other["paths"] = new_paths
 
+        # Merge specified keys of the OpenAPI spec
+        for key in config.merge_keys:
+            logger.info(f"Merging key: {key}")
+            d1: dict = spec
+            d2: dict = other
+            for subkey in key.split("."):
+                d1 = d1.setdefault(subkey, {})
+                d2 = d2.setdefault(subkey, {})
 
-def fetch_http_spec(url: str) -> OpenAPISpec:
-    """Fetch OpenAPI spec from a given HTTP[S] URL."""
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-    except Exception as e:
-        print(f"Failed to fetch {url}: {e}")
-        raise
-    else:
-        return response.json()
+            utils.recursive_merge(d1, d2, key)
 
-
-def load_file_spec(url: str) -> OpenAPISpec:
-    """Load OpenAPI spec from a local file."""
-    try:
-        with open(url, "r") as file:
-            return json.load(file)
-    except Exception as e:
-        print(f"Failed to load {url}: {e}")
-        raise
+    _, ext = os.path.splitext(output_file)
+    with open(output_file, "w") as f:
+        if ext in (".yaml", ".yml"):
+            yaml.dump(spec, f, sort_keys=False)
+        else:
+            json.dump(spec, f, indent=2)
 
 
 if __name__ == "__main__":

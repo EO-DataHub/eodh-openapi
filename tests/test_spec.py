@@ -1,15 +1,16 @@
-from eodh_openapi import OpenAPISpec
+from eodh_openapi.utils import recursive_merge
 
 
 def test_merge_spec__no_conflicts__success():
-    spec = OpenAPISpec(
-        openapi="3.1.0",
-        info=OpenAPISpec.Info(
-            title="Test API",
-            version="1.0.0",
-            description="Test API Description",
-        ),
-        paths={
+    spec = {
+        "openapi": "3.1.0",
+        "info": {
+            "title": "Test API",
+            "version": "1.0.0",
+            "description": "Test API Description",
+        },
+        "tags": ["test 1"],
+        "paths": {
             "/test1": {
                 "get": {
                     "summary": "Test Endpoint",
@@ -17,7 +18,7 @@ def test_merge_spec__no_conflicts__success():
                 },
             },
         },
-        components={
+        "components": {
             "schemas": {
                 "TestSchema": {
                     "type": "object",
@@ -25,16 +26,15 @@ def test_merge_spec__no_conflicts__success():
                 }
             }
         },
-        tags=["Test Tag"],
-    )
-    other = OpenAPISpec(
-        openapi="3.1.0",
-        info=OpenAPISpec.Info(
-            title="Other API",
-            version="1.0.0",
-            description="Other API Description",
-        ),
-        paths={
+    }
+    other = {
+        "openapi": "3.1.0",
+        "info": {
+            "title": "Other API",
+            "version": "1.0.0",
+            "description": "Other API Description",
+        },
+        "paths": {
             "/other1": {
                 "get": {
                     "summary": "Test Endpoint",
@@ -48,7 +48,7 @@ def test_merge_spec__no_conflicts__success():
                 },
             },
         },
-        components={
+        "components": {
             "schemas": {
                 "OtherSchema": {
                     "type": "object",
@@ -56,9 +56,16 @@ def test_merge_spec__no_conflicts__success():
                 }
             }
         },
-    )
-    assert len(spec.paths) == 1
-    assert len(spec.components) == 1
-    spec.merge(other)
-    assert len(spec.paths) == 3
-    assert len(spec.components) == 2
+    }
+
+    # pre checks
+    assert len(spec["paths"]) == 1
+    assert len(spec["components"]["schemas"]) == 1
+
+    # unit under test
+    for key in ("paths", "components"):
+        recursive_merge(spec[key], other[key])
+
+    # post checks
+    assert len(spec["paths"]) == 3
+    assert len(spec["components"]["schemas"]) == 2
