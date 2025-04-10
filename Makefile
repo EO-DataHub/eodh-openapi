@@ -8,11 +8,18 @@ MAKEFLAGS += --no-print-directory
 
 .PHONY: run-dev
 run-dev:
-	fastapi dev main.py --port=$(port)
+	python -m eodh_openapi spec serve --port=$(port) --config=$(config) \
+	  --static-dir=$(static)
 
 .PHONY: container-build
 container-build:
 	$(docker) build -t $(image):$(version) .
+
+.PHONY: container-run
+container-run:
+	$(docker) run --rm \
+	--mount type=bind,source=$(PWD)/eodh_openapi/web/static,target=/app/eodh_openapi/web/static \
+	-p $(port):8000 $(image):$(version)
 
 .PHONY: container-push
 container-push:
