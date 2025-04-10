@@ -78,9 +78,9 @@ def spec():
     help="Output filename",
     show_default=True,
 )
-def merge(config_file: str, output_file: str):
+def generate(config_file: str, output_file: str):
     """
-    Merge OpenAPI specs from multiple sources into a single spec.
+    Generate OpenAPI spec from multiple sources into a single spec.
     """
     config = Config.load(config_file)
     logger.info(f"Loaded config from {config_file}")

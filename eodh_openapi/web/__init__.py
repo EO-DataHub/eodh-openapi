@@ -2,7 +2,7 @@ import os
 import os.path
 
 from fastapi import APIRouter, FastAPI, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -38,6 +38,10 @@ def create_app(
     @router.get("/openapi.json", include_in_schema=False, response_class=FileResponse)
     async def spec():
         return FileResponse(path=os.path.join(static_dir, openapi_spec))
+
+    @router.get("/health", include_in_schema=False, response_class=JSONResponse)
+    async def health():
+        return {"status": "ok"}
 
     app.include_router(router)
     return app
