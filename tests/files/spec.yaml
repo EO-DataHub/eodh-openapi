@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: Test API
+  description: API documentation for the Test API
+  version: 0.1.0
+servers:
+  - url: https://test.org.uk
+    description: Test Domain
+paths:
+  /:
+    get:
+      summary: Home page
+      description: Home page
+      operationId: Home__get
+      responses:
+        200:
+          description: Successful Response
+  /test:
+    get:
+      summary: Test page
+      description: Test page
+      operationId: Test__get
+      responses:
+        200:
+          description: Successful Response
