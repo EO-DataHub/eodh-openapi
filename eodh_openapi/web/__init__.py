@@ -2,14 +2,17 @@ import os
 import os.path
 
 from fastapi import APIRouter, FastAPI, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.exceptions import HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+from .. import utils
 
 
 def create_app(
     title: str,
-    base_path: str = "/",
+    base_path: str = "",
     openapi_spec: str = "openapi.json",
     static_dir: str = None,
 ) -> FastAPI:
@@ -27,17 +30,24 @@ def create_app(
     @router.get("/", include_in_schema=False, response_class=HTMLResponse)
     async def docs(request: Request):
         return templates.TemplateResponse(
-            "index.html",
-            {
-                "request": request,
+            request=request,
+            name="index.html",
+            context={
                 "title": title,
                 "url": f"{base_path}/openapi.json",
             },
         )
 
-    @router.get("/openapi.json", include_in_schema=False, response_class=FileResponse)
+    @router.get("/openapi.json", include_in_schema=False, response_class=JSONResponse)
     async def spec():
-        return FileResponse(path=os.path.join(static_dir, openapi_spec))
+        try:
+            return utils.load_file_spec(os.path.join(static_dir, openapi_spec))
+        except FileNotFoundError:
+            raise HTTPException(
+                status_code=404,
+                detail=f"OpenAPI spec file '{os.path.join(static_dir, openapi_spec)}' "
+                "not found.",
+            )
 
     @router.get("/health", include_in_schema=False, response_class=JSONResponse)
     async def health():

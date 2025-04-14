@@ -56,7 +56,7 @@ def fetch_http_spec(url: str) -> OpenAPISpec:
         response = requests.get(url)
         response.raise_for_status()
     except Exception as e:
-        print(f"Failed to fetch {url}: {e}")
+        logger.error("Failed to fetch %s: %r", url, e)
         raise
     else:
         if ext in (".yaml", ".yml"):
@@ -75,5 +75,5 @@ def load_file_spec(file_path: str) -> OpenAPISpec:
             else:
                 return json.load(file)
     except Exception as e:
-        print(f"Failed to load {file_path}: {e}")
+        logger.error("Failed to load %s: %r", file_path, e)
         raise
