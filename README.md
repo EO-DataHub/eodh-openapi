@@ -1,115 +1,163 @@
-# UK EO Data Hub Platform: template repository
+# UK EO DataHub OpenAPI Docs
 
-This serves as a template repository for new UKEODHP Python-base software components.
+This app merges OpenAPI v3 spec docs from multiple sources and servces them as a single document.
 
-When using this template remember to:
-* Edit `pyproject.toml` and set everything marked `CHANGEME`
-* Update the dependencies as described below.
-* Create a Docker repo in AWS (https://eu-west-2.console.aws.amazon.com/ecr/create-repository?region=eu-west-2 for
-  the Telespazio UKEODHP repos) and update `Makefile` with the name of the Docker image to build.
-* Consider adding `dockerrun` and/or `run` targets to the `Makefile`.
-* Update `Dockerfile`
-* Add a description here of how to do local development.
+## Usage
 
-# Development of this component
+### Generating the Combined OpenAPI Spec File
 
-## Getting started
+To generate the combined OpenAPI spec file, you must first create a base OpenAPI v3 configuration. This will be the metadata for your spec.
 
-### Install via makefile
-
-```commandline
-make setup
+```yaml base.yaml
+openapi: 3.1.0
+info:
+  title: UK EO DataHub API
+  description: API documentation for the UK EO DataHub platform
+  version: 0.1.0
+servers:
+  - url: https://eodatahub.org.uk
+    description: "UK EO DataHub Platform Domain"
 ```
 
-This will create a virtual environment called `venv`, build `requirements.txt` and
-`requirements-dev.txt` from `pyproject.toml` if they're out of date, install the Python
-and Node dependencies and install `pre-commit`.
+Now create two local specs to be merged into your spec.
 
-It's safe and fast to run `make setup` repeatedly as it will only update these things if
-they have changed.
-
-After `make setup` you can run `pre-commit` to run pre-commit checks on staged changes and
-`pre-commit run --all-files` to run them on all files. This replicates the linter checks that
-run from GitHub actions.
-
-
-### Alternative installation
-
-You will need Python 3.11. On Debian you may need:
-* `sudo add-apt-repository -y 'deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main'` (or `jammy` in place of `focal` for later Debian)
-* `sudo apt update`
-* `sudo apt install python3.11 python3.11-venv`
-
-and on Ubuntu you may need
-* `sudo add-apt-repository -y 'ppa:deadsnakes/ppa'`
-* `sudo apt update`
-* `sudo apt install python3.11 python3.11-venv`
-
-To prepare running it:
-
-* `virtualenv venv -p python3.11`
-* `. venv/bin/activate`
-* `rehash`
-* `python -m ensurepip -U`
-* `pip3 install -r requirements.txt`
-* `pip3 install -r requirements-dev.txt`
-
-You should also configure your IDE to use black so that code is automatically reformatted on save.
-
-## Building and testing
-
-This component uses `pytest` tests and the `ruff` and `black` linters. `black` will reformat your code in an
-opinionated way.
-
-A number of `make` targets are defined:
-* `make test`: run tests continuously
-* `make testonce`: run tests once
-* `make lint`: lint and reformat
-* `make dockerbuild`: build a `latest` Docker image (use `make dockerbuild `VERSION=1.2.3` for a release image)
-* `make dockerpush`: push a `latest` Docker image (again, you can add `VERSION=1.2.3`) - normally this should be done
-  only via the build system and its GitHub actions.
-
-## Managing requirements
-
-Requirements are specified in `pyproject.toml`, with development requirements listed separately. Specify version
-constraints as necessary but not specific versions. After changing them:
-
-* Run `pip-compile` (or `pip-compile -U` to upgrade requirements within constraints) to regenerate `requirements.txt`
-* Run `pip-compile --extra dev -o requirements-dev.txt` (again, add `-U` to upgrade) to regenerate
-  `requirements-dev.txt`.
-* Run the `pip3 install -r requirements.txt` and `pip3 install -r requirements-dev.txt` commands again and test.
-* Commit these files.
-
-If you see the error
-
-```commandline
-Backend subprocess exited when trying to invoke get_requires_for_build_wheel
-Failed to parse /.../template-python/pyproject.toml
+```json users.json
+{
+  "paths": [
+    {
+      "/users": {
+        "get": {
+          "tags": ["Users"],
+          "responses": {
+            "200": "descrition": "OK",
+            "404": "descrition": "Not Found"
+          }
+        },
+        "post": {
+          "tags": ["Users"],
+          "responses": {
+            "201": "descrition": "Created",
+            "400": "descrition": "Bad Request"
+          }
+        }
+      }
+    },
+    {
+      "/users/{user}": {
+        "get": {
+          "tags": ["Users"],
+          "responses": {
+            "200": "descrition": "OK",
+            "404": "descrition": "Not Found"
+          }
+        }
+      }
+    },
+  ]
+}
 ```
 
-then install and run `validate-pyproject pyproject.toml` and/or `pip3 install .` to check its syntax.
+```json workspaces.json
+{
+  "paths": [
+    {
+      "/workspaces": {
+        "get": {
+          "tags": ["Workspaces"],
+          "responses": {
+            "200": "descrition": "OK",
+            "404": "descrition": "Not Found"
+          }
+        },
+        "post": {
+          "tags": ["Workspaces"],
+          "responses": {
+            "201": "descrition": "Created",
+            "400": "descrition": "Bad Request"
+          }
+        }
+      }
+    },
+    {
+      "/workspaces/{workspace}": {
+        "get": {
+          "tags": ["Workspaces"],
+          "responses": {
+            "200": "descrition": "OK",
+            "404": "descrition": "Not Found"
+          }
+        }
+      }
+    },
+  ]
+}
+```
 
-To check for vulnerable dependencies, run `pip-audit`.
+Finally, create the config that defines the sources of the specs to be merged. URL prefixes `file://` and `http[s]://` can be used to load specs from local file or the internet, respectively.
 
-## Releasing
+```yaml
+base_url: file://base.yaml
+merge_keys:
+  - paths
+  - components
+sources:
+  - url: file://users.json
+    prefix: /api
+    servers:
+      - url: https://eodatahub.org.uk
+        description: UK EO DataHub Platform Domain
+  - url: file://workspaces.json
+    prefix: /api
+    servers:
+      - url: https://eodatahub.org.uk
+        description: UK EO DataHub Platform Domain
+  # - url: https://eodatahub.org.uk/api/docs/workflow-runner/openapi.json
+  #   servers:
+  #     - url: https://eodatahub.org.uk
+  #       description: UK EO DataHub Platform Domain
+```
 
-Ensure that `make lint` and `make test` work correctly and produce no further changes to code formatting before
-continuing.
+With the configuration complete, you can now generate the combined OpenAPI spec. This will generate the combined openapi.json spec and, by default, output it to a local static directory in the eodh_openapi/web/static directory ready to be served by the app.
 
-Releases tagged `latest` and targeted at development environments can be created from the `main` branch. Releases for
-installation in non-development environments should be created from a Git tag named using semantic versioning. For
-example, using
+```bash
+make generate config=config.yaml
+```
 
-* `git tag 1.2.3`
-* `git push --tags`
+### Serving the OpenAPI Spec
 
-Normally, Docker images will be built automatically after pushing to the UKEODHP repos. Images can also be created
-manually in the following way:
+To serve the generated OpenAPI spec over HTTP, ensure you have a static directory with the spec inside it. By default this is eodh_openapi/web/static, but you can change it via command line options if required.
 
-* For versioned images create a git tag.
-* Log in to the Docker repository service. For the UKEODHP environment this can be achieved with the following command
-  ```AWS_ACCESS_KEY_ID=...  AWS_SECRET_ACCESS_KEY=... aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 312280911266.dkr.ecr.eu-west-2.amazonaws.com```
-  You will need to create an access key for a user with permission to modify ECR first.
-* Run `make dockerbuild` (for images tagged `latest`) or `make dockerbuild VERSION=1.2.3` for a release tagged `1.2.3`.
-  The image will be available locally within Docker after this step.
-* Run `make dockerpush` or `make dockerpush VERSION=1.2.3`. This will send the image to the ECR repository.
+```bash
+make run-dev
+```
+
+### Help
+
+Common commands have been included in the Makefile. To discover all options available, use the help command directly on the eodh_openapi app.
+
+```bash
+python -m eodh_openapi spec generate --help
+python -m eodh_openapi spec serve --help
+```
+
+## Development
+
+### Release
+
+All official releases should be performed through GitHub by creating a release and tagging it with a tag matching the form v1.2.3. Release versions should follow semver. Keep the version in the pyproject.toml and Makefile up to date with the current release.
+
+Local release candidates can be released using the Makefile.
+
+```bash
+make container-build
+make container-push
+# or simply
+make publish
+```
+
+It is advised to test container image locally before release.
+
+```bash
+make container-build
+make container-run
+```

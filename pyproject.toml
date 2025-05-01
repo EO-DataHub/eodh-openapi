@@ -14,7 +14,7 @@
 
 [project]
 name = "eodh-openapi"
-version = "0.1.0"
+version = "0.1.1"
 description = "OpenAPI docs for UK EO DataHub. Merges OpenAPI docs from multiple sources into one deployment."
 readme = "README.md"
 requires-python = ">=3.10"

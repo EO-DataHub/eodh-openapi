@@ -19,7 +19,7 @@ def create_app(
     static_dir = static_dir or os.path.join(os.path.dirname(__file__), "static")
 
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
-    app.mount(static_dir, StaticFiles(directory=static_dir), name="static")
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     templates = Jinja2Templates(
         directory=os.path.join(os.path.dirname(__file__), "templates")
