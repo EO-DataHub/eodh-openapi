@@ -23,6 +23,8 @@ class Config:
         url: str
         prefix: str = ""
         servers: list[Server] = field(default_factory=list)
+        tags: list[str] = field(default_factory=list)
+        description_overrides: dict[str, str] = field(default_factory=dict)
 
     base_url: str
     merge_keys: list[str] = field(default_factory=list)
@@ -45,6 +47,8 @@ class Config:
                     url=source["url"],
                     prefix=source.get("prefix", ""),
                     servers=source.get("servers", []),
+                    tags=source.get("tags", []),
+                    description_overrides=source.get("description_overrides", {}),
                 )
                 for source in config_data.get("sources", [])
             ],
@@ -112,6 +116,18 @@ def generate(config_file: str, output_file: str):
             new_paths[f"{source.prefix}{k}"].setdefault("servers", []).extend(
                 source.servers
             )  # Add source servers to the paths, if any
+            for method, op in v.items():
+                if not isinstance(op, dict):
+                    continue
+                op["tags"] = source.tags
+
+            # apply per-path description overrides
+            for path_suffix, desc in source.description_overrides.items():
+                full_path = f"{source.prefix}{path_suffix}"
+                if full_path in new_paths:
+                    for op in new_paths[full_path].values():
+                        if isinstance(op, dict):
+                            op["description"] = desc
         other["paths"] = new_paths
 
         # Merge specified keys of the OpenAPI spec

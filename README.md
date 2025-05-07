@@ -23,73 +23,65 @@ Now create two local specs to be merged into your spec.
 
 ```json users.json
 {
-  "paths": [
-    {
-      "/users": {
-        "get": {
-          "tags": ["Users"],
-          "responses": {
-            "200": "descrition": "OK",
-            "404": "descrition": "Not Found"
-          }
-        },
-        "post": {
-          "tags": ["Users"],
-          "responses": {
-            "201": "descrition": "Created",
-            "400": "descrition": "Bad Request"
-          }
+  "paths": {
+    "/users": {
+      "get": {
+        "tags": ["Users"],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": { "description": "Not Found" }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "responses": {
+          "201": { "description": "Created" },
+          "400": { "description": "Bad Request" }
         }
       }
     },
-    {
-      "/users/{user}": {
-        "get": {
-          "tags": ["Users"],
-          "responses": {
-            "200": "descrition": "OK",
-            "404": "descrition": "Not Found"
-          }
+    "/users/{user}": {
+      "get": {
+        "tags": ["Users"],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": { "description": "Not Found" }
         }
       }
-    },
-  ]
+    }
+  }
 }
 ```
 
 ```json workspaces.json
 {
-  "paths": [
-    {
-      "/workspaces": {
-        "get": {
-          "tags": ["Workspaces"],
-          "responses": {
-            "200": "descrition": "OK",
-            "404": "descrition": "Not Found"
-          }
-        },
-        "post": {
-          "tags": ["Workspaces"],
-          "responses": {
-            "201": "descrition": "Created",
-            "400": "descrition": "Bad Request"
-          }
+  "paths": {
+    "/workspaces": {
+      "get": {
+        "tags": ["Workspaces"],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": { "description": "Not Found" }
+        }
+      },
+      "post": {
+        "tags": ["Workspaces"],
+        "responses": {
+          "201": { "description": "Created" },
+          "400": { "description": "Bad Request" }
         }
       }
     },
-    {
-      "/workspaces/{workspace}": {
-        "get": {
-          "tags": ["Workspaces"],
-          "responses": {
-            "200": "descrition": "OK",
-            "404": "descrition": "Not Found"
-          }
+    "/workspaces/{workspace}": {
+      "get": {
+        "tags": ["Workspaces"],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": { "description": "Not Found" }
         }
       }
-    },
-  ]
+    }
+  }
 }
 ```
 
