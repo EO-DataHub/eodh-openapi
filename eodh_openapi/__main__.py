@@ -24,11 +24,16 @@ class Config:
         prefix: str = ""
         servers: list[Server] = field(default_factory=list)
         tags: list[str] = field(default_factory=list)
-        description_overrides: dict[str, str] = field(default_factory=dict)
+        filters: dict[str, list[str]] = field(default_factory=dict)
+
+    class TagDefinition(TypedDict):
+        name: str
+        description: str = ""
 
     base_url: str
     merge_keys: list[str] = field(default_factory=list)
     sources: list[APISource] = field(default_factory=list)
+    tags: list[TagDefinition] = field(default_factory=list)
 
     @staticmethod
     def load(filename: str) -> "Config":
@@ -48,9 +53,15 @@ class Config:
                     prefix=source.get("prefix", ""),
                     servers=source.get("servers", []),
                     tags=source.get("tags", []),
-                    description_overrides=source.get("description_overrides", {}),
+                    filters=source.get("filters", {}),
                 )
                 for source in config_data.get("sources", [])
+            ],
+            tags=[
+                Config.TagDefinition(
+                    name=tag["name"], description=tag.get("description", "")
+                )
+                for tag in config_data.get("tags", [])
             ],
         )
 
@@ -98,6 +109,11 @@ def generate(config_file: str, output_file: str):
     else:
         logger.info(f"Loaded base OpenAPI spec from {config.base_url}")
 
+    # Set the tags for the base spec
+    spec.setdefault("tags", [])
+    for tag in config.tags:
+        spec["tags"].append(tag)
+
     # Merge all sources into the OpenAPI spec
     for source in config.sources:
         try:
@@ -108,26 +124,56 @@ def generate(config_file: str, output_file: str):
         else:
             logger.info(f"Merging spec from {source.url} into base spec.")
 
+        # If we are not overwriting tags for this source then add original spec tag definitions
+        if not source.tags:
+            # copy any top-level tags defined in the fetched spec
+            spec.setdefault("tags", []).extend(other.get("tags", []))
+
         # Overwrite existing paths in other with paths with source prefix
         paths: dict[str, Any] = other.setdefault("paths", {})
         new_paths: dict[str, Any] = {}
-        for k, v in paths.items():
-            new_paths[f"{source.prefix}{k}"] = v
-            new_paths[f"{source.prefix}{k}"].setdefault("servers", []).extend(
+
+        # Precompute the list of tags we should exclude, if any
+        filter_tags = source.filters.get("tags", [])
+        for path, path_definition in paths.items():
+            if filter_tags:
+                has_forbidden = False
+                for op in path_definition.values():
+                    if not isinstance(op, dict):
+                        continue
+                    # op.get("tags") might be missing or not a list
+                    for t in op.get("tags", []):
+                        if t in filter_tags:
+                            has_forbidden = True
+                            break
+                    if has_forbidden:
+                        break
+                if has_forbidden:
+                    # skip this entire path
+                    continue
+            new_paths[f"{source.prefix}{path}"] = path_definition
+            new_paths[f"{source.prefix}{path}"].setdefault("servers", []).extend(
                 source.servers
             )  # Add source servers to the paths, if any
-            for method, op in v.items():
-                if not isinstance(op, dict):
-                    continue
-                op["tags"] = source.tags
 
-            # apply per-path description overrides
-            for path_suffix, desc in source.description_overrides.items():
-                full_path = f"{source.prefix}{path_suffix}"
-                if full_path in new_paths:
-                    for op in new_paths[full_path].values():
-                        if isinstance(op, dict):
-                            op["description"] = desc
+            if source.tags:
+                for method, op in {
+                    method: op
+                    for method, op in path_definition.items()
+                    if method
+                    in (
+                        "get",
+                        "put",
+                        "post",
+                        "delete",
+                        "options",
+                        "head",
+                        "patch",
+                        "trace",
+                    )
+                }.items():
+                    op["tags"] = source.tags
+
         other["paths"] = new_paths
 
         # Merge specified keys of the OpenAPI spec
@@ -142,6 +188,21 @@ def generate(config_file: str, output_file: str):
             utils.recursive_merge(d1, d2, key)
 
     _, ext = os.path.splitext(output_file)
+    tag_description_map: dict[str, str] = {}
+    # keep any existing definitions (base + sources without overrides)
+    for existing_tag in spec.get("tags", []):
+        tag_name = existing_tag.get("name")
+        if tag_name:
+            tag_description_map[tag_name] = existing_tag.get("description", "")
+    # override or add from config.tags
+    for config_tag in config.tags:
+        tag_description_map[config_tag["name"]] = config_tag.get("description", "")
+    # Rewrite spec["tags"] as a deduped list, preserving order of first appearance in 'tag_description_map'
+    spec["tags"] = [
+        {"name": name, "description": tag_description_map[name]}
+        for name in tag_description_map
+    ]
+
     with open(output_file, "w") as f:
         if ext in (".yaml", ".yml"):
             yaml.dump(spec, f, sort_keys=False)
