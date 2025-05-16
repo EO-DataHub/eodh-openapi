@@ -17,12 +17,24 @@ OpenAPISpec = dict[str, Any]
 def recursive_merge(d1: dict, d2: dict, base: Optional[str] = None) -> dict:
     """Recursively merge two dictionaries. Updates d1 with values from d2."""
     for key, value in d2.items():
+        # Build our dotted path for logging
+        path = f"{base}.{key}" if base else key
+
         if isinstance(value, dict):
-            recursive_merge(d1.setdefault(key, {}), value, f"{base}.{key}")
+            # If d1[key] exists and is not a dict, replace it
+            if key in d1 and not isinstance(d1[key], dict):
+                logger.warning(f"Overwriting non‐dict at '{path}' with a dict")
+                d1[key] = {}
+
+            # Now safe to recurse: ensures d1[key] is a dict
+            recursive_merge(d1.setdefault(key, {}), value, path)
+
         else:
+            # Scalar or list: just overwrite
             if key in d1:
-                logger.warning(f"Overwriting key '{base}.{key}' in dictionary.")
+                logger.info(f"Overwriting '{path}'")
             d1[key] = value
+
     return d1
 
 
