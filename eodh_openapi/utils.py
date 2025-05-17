@@ -88,7 +88,7 @@ class Config:
                     prefix=source.get("prefix", ""),
                     servers=source.get("servers", []),
                     tags=set(source.get("tags", [])),
-                    filters=Config.APISource.OperationsFilter(
+                    operations_filter=Config.APISource.OperationsFilter(
                         tags=set(source.get("tags", [])),
                     ),
                 )
