@@ -60,7 +60,7 @@ class Config:
         url: str
         prefix: str = ""
         servers: list[Server] = field(default_factory=list)
-        tags: list[str] = field(default_factory=list)
+        tags: set[str] = field(default_factory=set)
         operations_filter: OperationsFilter = field(default_factory=OperationsFilter)
 
     class TagDefinition(TypedDict):

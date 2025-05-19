@@ -19,11 +19,6 @@
         deepLinking: true,
         showExtensions: true,
         showCommonExtensions: true,
-        tagsSorter: "alpha",
-        operationsSorter: (a, b) => {
-          // compare by path
-          return a.get("path", "").localeCompare(b.get("path", ""));
-        },
         presets: [
           SwaggerUIBundle.presets.apis,
           SwaggerUIBundle.SwaggerUIStandalonePreset,
