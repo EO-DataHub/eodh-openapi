@@ -55,3 +55,53 @@ def test_recursive_merge__conflict__overwrite():
         "a": {"b": {"c": "value", "d": "new_value"}},
         "x": {"y": {"z": "another_value"}},
     }
+
+
+def test_update_tags__no_conflicts():
+    tags = [{"name": "tag1", "description": "description1"}]
+    new_tags = [{"name": "tag2", "description": "description2"}]
+    result = utils.update_tags(tags, new_tags)
+    assert result == [
+        {"name": "tag1", "description": "description1"},
+        {"name": "tag2", "description": "description2"},
+    ]
+
+
+def test_update_tags__conflict():
+    tags = [{"name": "tag1", "description": "description1"}]
+    new_tags = [
+        {"name": "tag1", "description": "new_description"},
+        {"name": "tag2", "description": "description2"},
+    ]
+    result = utils.update_tags(tags, new_tags)
+    assert result == [
+        {"name": "tag1", "description": "new_description"},
+        {"name": "tag2", "description": "description2"},
+    ]
+
+
+def test_operations_filter__filter_methods_only():
+    path_definition = {
+        "summary": "Summary",
+        "get": {"summary": "Get"},
+        "post": {"summary": "Post"},
+        "delete": {"summary": "Delete"},
+    }
+    filter = utils.Config.APISource.OperationsFilter(methods={"get", "post"})
+    result = dict(filter(path_definition))
+    assert result == {"get": {"summary": "Get"}, "post": {"summary": "Post"}}
+
+
+def test_operations_filter__filter_tags_only():
+    path_definition = {
+        "summary": "Summary",
+        "get": {"summary": "Get", "tags": ["tag1"]},
+        "post": {"summary": "Post", "tags": ["tag2"]},
+        "delete": {"summary": "Delete", "tags": ["tag1"]},
+    }
+    filter = utils.Config.APISource.OperationsFilter(tags={"tag1"})
+    result = dict(filter(path_definition))
+    assert result == {
+        "get": {"summary": "Get", "tags": ["tag1"]},
+        "delete": {"summary": "Delete", "tags": ["tag1"]},
+    }

@@ -1,8 +1,6 @@
 import json
-import logging
 import os.path
-from dataclasses import dataclass, field
-from typing import Any, TypedDict
+from typing import Any
 
 import click
 import uvicorn
@@ -10,45 +8,6 @@ import yaml
 
 from . import utils, web
 from .log import logger
-
-
-@dataclass
-class Config:
-    @dataclass
-    class APISource:
-        class Server(TypedDict):
-            url: str
-            description: str
-
-        url: str
-        prefix: str = ""
-        servers: list[Server] = field(default_factory=list)
-
-    base_url: str
-    merge_keys: list[str] = field(default_factory=list)
-    sources: list[APISource] = field(default_factory=list)
-
-    @staticmethod
-    def load(filename: str) -> "Config":
-        try:
-            with open(filename, "r") as f:
-                config_data: dict = yaml.safe_load(f)
-        except FileNotFoundError:
-            logging.error(f"Config file {filename} not found.")
-            raise
-
-        return Config(
-            base_url=config_data["base_url"],
-            merge_keys=config_data.get("merge_keys", []),
-            sources=[
-                Config.APISource(
-                    url=source["url"],
-                    prefix=source.get("prefix", ""),
-                    servers=source.get("servers", []),
-                )
-                for source in config_data.get("sources", [])
-            ],
-        )
 
 
 @click.group()
@@ -82,7 +41,7 @@ def generate(config_file: str, output_file: str):
     """
     Generate OpenAPI spec from multiple sources into a single spec.
     """
-    config = Config.load(config_file)
+    config = utils.Config.load(config_file)
     logger.info(f"Loaded config from {config_file}")
 
     # Load base OpenAPI spec
@@ -94,6 +53,9 @@ def generate(config_file: str, output_file: str):
     else:
         logger.info(f"Loaded base OpenAPI spec from {config.base_url}")
 
+    # Initialise tags in the spec if not present
+    spec.setdefault("tags", [])
+
     # Merge all sources into the OpenAPI spec
     for source in config.sources:
         try:
@@ -104,14 +66,30 @@ def generate(config_file: str, output_file: str):
         else:
             logger.info(f"Merging spec from {source.url} into base spec.")
 
-        # Overwrite existing paths in other with paths with source prefix
-        paths: dict[str, Any] = other.setdefault("paths", {})
+        # If we are not overwriting tags for this source then add original spec tag definitions
+        if not source.tags:
+            spec["tags"].extend(other.get("tags", []))
+
+        # Iterate over the paths and update the fields where required
         new_paths: dict[str, Any] = {}
-        for k, v in paths.items():
-            new_paths[f"{source.prefix}{k}"] = v
-            new_paths[f"{source.prefix}{k}"].setdefault("servers", []).extend(
-                source.servers
-            )  # Add source servers to the paths, if any
+        for path, path_definition in other.setdefault("paths", {}).items():
+            # Extract the operations from the path definition and retag if necessary
+            operations = dict(source.operations_filter(path_definition))
+            if not operations:
+                # no matching ops found
+                continue
+
+            # retag those operations if the source specified tags
+            if source.tags:
+                for op_def in operations.values():
+                    op_def["tags"] = list(source.tags)
+
+            # carry over any servers you want at the path‐level
+            operations.setdefault("servers", []).extend(source.servers)
+
+            new_paths[f"{source.prefix}{path}"] = operations
+
+        # Add modified other paths to the base spec
         other["paths"] = new_paths
 
         # Merge specified keys of the OpenAPI spec
@@ -125,6 +103,12 @@ def generate(config_file: str, output_file: str):
 
             utils.recursive_merge(d1, d2, key)
 
+    # Update or append spec tags from source config
+    spec["tags"] = sorted(
+        utils.update_tags(spec["tags"], config.tags), key=lambda x: x["name"]
+    )  # Sort the tags by name
+
+    # Output the final spec
     _, ext = os.path.splitext(output_file)
     with open(output_file, "w") as f:
         if ext in (".yaml", ".yml"):
