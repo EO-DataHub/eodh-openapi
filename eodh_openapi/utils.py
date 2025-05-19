@@ -2,6 +2,7 @@ import json
 import logging
 import os.path
 import re
+from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Iterator, Optional, TypedDict
 
@@ -57,7 +58,7 @@ class Config:
         url: str
         prefix: str = ""
         servers: list[Server] = field(default_factory=list)
-        tags: set[str] = field(default_factory=set)
+        tags: set[str] = field(default_factory=defaultdict(set))
         operations_filter: OperationsFilter = field(default_factory=OperationsFilter)
 
     class TagDefinition(TypedDict):
