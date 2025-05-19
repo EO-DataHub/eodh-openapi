@@ -49,7 +49,9 @@ class Config:
                     if op in self.methods:
                         if self.tags:
                             # Tags specified, check if any of them match
-                            if set(op_definition.get("tags", [])) & self.tags:
+                            if not self.tags or (
+                                set(op_definition.get("tags", [])) & self.tags
+                            ):
                                 yield op, op_definition
                         else:
                             # No tags specified, include all operations
@@ -58,8 +60,8 @@ class Config:
         url: str
         prefix: str = ""
         servers: list[Server] = field(default_factory=list)
-        tags: set[str] = field(default_factory=set)
-        operations_filter: OperationsFilter = field(default_factory=defaultdict(set))
+        tags: list[str] = field(default_factory=list)
+        operations_filter: OperationsFilter = field(default_factory=OperationsFilter)
 
     class TagDefinition(TypedDict):
         name: str
@@ -89,7 +91,7 @@ class Config:
                     servers=source.get("servers", []),
                     tags=set(source.get("tags", [])),
                     operations_filter=Config.APISource.OperationsFilter(
-                        tags=set(source.get("tags", [])),
+                        tags=set(source.get("filters", {}).get("tags", [])),
                     ),
                 )
                 for source in config_data.get("sources", [])

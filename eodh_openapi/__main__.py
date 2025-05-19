@@ -75,17 +75,21 @@ def generate(config_file: str, output_file: str):
         for path, path_definition in other.setdefault("paths", {}).items():
             # Extract the operations from the path definition and retag if necessary
             operations = dict(source.operations_filter(path_definition))
-            for _, op_definition in operations.items():
-                if source.tags:
-                    op_definition["tags"] = source.tags
+            if not operations:
+                # no matching ops found
+                continue
 
-            # Add path definitons to new spec and prefix the paths, if required
-            new_paths[f"{source.prefix}{path}"] = (
-                path_definition | operations
-            )  # overwrite operations with retagged ones
-            new_paths[f"{source.prefix}{path}"].setdefault("servers", []).extend(
-                source.servers
-            )  # Add source servers to the paths, if any
+            # retag those operations if the source specified tags
+            if source.tags:
+                for op_def in operations.values():
+                    op_def["tags"] = list(source.tags)
+
+            # build a new PathItem consisting of only our filtered ops
+            new_item = operations
+            # carry over any servers you want at the path‐level
+            new_item.setdefault("servers", []).extend(source.servers)
+
+            new_paths[f"{source.prefix}{path}"] = new_item
 
         # Add modified other paths to the base spec
         other["paths"] = new_paths
