@@ -84,12 +84,10 @@ def generate(config_file: str, output_file: str):
                 for op_def in operations.values():
                     op_def["tags"] = list(source.tags)
 
-            # build a new PathItem consisting of only our filtered ops
-            new_item = operations
             # carry over any servers you want at the path‐level
-            new_item.setdefault("servers", []).extend(source.servers)
+            operations.setdefault("servers", []).extend(source.servers)
 
-            new_paths[f"{source.prefix}{path}"] = new_item
+            new_paths[f"{source.prefix}{path}"] = operations
 
         # Add modified other paths to the base spec
         other["paths"] = new_paths
