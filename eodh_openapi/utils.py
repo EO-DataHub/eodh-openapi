@@ -49,9 +49,7 @@ class Config:
                     if op in self.methods:
                         if self.tags:
                             # Tags specified, check if any of them match
-                            if not self.tags or (
-                                set(op_definition.get("tags", [])) & self.tags
-                            ):
+                            if set(op_definition.get("tags", [])) & self.tags:
                                 yield op, op_definition
                         else:
                             # No tags specified, include all operations
