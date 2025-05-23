@@ -37,7 +37,12 @@ def spec():
     help="Output filename",
     show_default=True,
 )
-def generate(config_file: str, output_file: str):
+@click.option(
+    "--fail-on-missing-source/--no-fail-on-missing-source",
+    default=False,
+    help="If set, abort on any source load failure (instead of skipping).",
+)
+def generate(config_file: str, output_file: str, fail_on_missing_source: bool):
     """
     Generate OpenAPI spec from multiple sources into a single spec.
     """
@@ -62,6 +67,11 @@ def generate(config_file: str, output_file: str):
             other = utils.load_spec(source.url)
         except Exception as e:
             logger.error(f"Failed to load spec from {source.url}: {e}. Skipping.")
+            if fail_on_missing_source:
+                raise click.ClickException(
+                    f"Failed to load spec from {source.url}: {e}."
+                )
+            logger.info("Skipping this source and continuing with the next one.")
             continue
         else:
             logger.info(f"Merging spec from {source.url} into base spec.")
