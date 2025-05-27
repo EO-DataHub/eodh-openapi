@@ -66,7 +66,7 @@ def generate(config_file: str, output_file: str, fail_on_missing_source: bool):
         try:
             other = utils.load_spec(source.url)
         except Exception as e:
-            logger.error(f"Failed to load spec from {source.url}: {e}. Skipping.")
+            logger.error(f"Failed to load spec from {source.url}: {e}.")
             if fail_on_missing_source:
                 raise click.ClickException(
                     f"Failed to load spec from {source.url}: {e}."
