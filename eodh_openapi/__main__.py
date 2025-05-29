@@ -95,7 +95,8 @@ def generate(config_file: str, output_file: str, fail_on_missing_source: bool):
                     op_def["tags"] = list(source.tags)
 
             # carry over any servers you want at the path‐level
-            operations.setdefault("servers", []).extend(source.servers)
+            if source.servers:
+                operations.setdefault("servers", []).extend(source.servers)
 
             new_paths[f"{source.prefix}{path}"] = operations
 
