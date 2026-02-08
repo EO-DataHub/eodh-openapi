@@ -14,21 +14,19 @@ def create_app(
     title: str,
     base_path: str = "",
     openapi_spec: str = "openapi.json",
-    static_dir: str = None,
+    static_dir: str | None = None,
 ) -> FastAPI:
     static_dir = static_dir or os.path.join(os.path.dirname(__file__), "static")
 
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-    templates = Jinja2Templates(
-        directory=os.path.join(os.path.dirname(__file__), "templates")
-    )
+    templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 
     router = APIRouter(prefix=base_path)
 
     @router.get("/", include_in_schema=False, response_class=HTMLResponse)
-    async def docs(request: Request):
+    async def docs(request: Request) -> HTMLResponse:
         return templates.TemplateResponse(
             request=request,
             name="index.html",
@@ -39,18 +37,17 @@ def create_app(
         )
 
     @router.get("/openapi.json", include_in_schema=False, response_class=JSONResponse)
-    async def spec():
+    async def spec() -> utils.OpenAPISpec:
         try:
             return utils.load_file_spec(os.path.join(static_dir, openapi_spec))
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             raise HTTPException(
                 status_code=404,
-                detail=f"OpenAPI spec file '{os.path.join(static_dir, openapi_spec)}' "
-                "not found.",
-            )
+                detail=f"OpenAPI spec file '{os.path.join(static_dir, openapi_spec)}' not found.",
+            ) from e
 
     @router.get("/health", include_in_schema=False, response_class=JSONResponse)
-    async def health():
+    async def health() -> dict[str, str]:
         return {"status": "ok"}
 
     app.include_router(router)

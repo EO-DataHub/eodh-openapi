@@ -11,12 +11,12 @@ from .log import logger
 
 
 @click.group()
-def cli():
+def cli() -> None:
     pass
 
 
 @cli.group()
-def spec():
+def spec() -> None:
     pass
 
 
@@ -42,7 +42,7 @@ def spec():
     default=False,
     help="If set, abort on any source load failure (instead of skipping).",
 )
-def generate(config_file: str, output_file: str, fail_on_missing_source: bool):
+def generate(config_file: str, output_file: str, fail_on_missing_source: bool) -> None:
     """
     Generate OpenAPI spec from multiple sources into a single spec.
     """
@@ -68,9 +68,7 @@ def generate(config_file: str, output_file: str, fail_on_missing_source: bool):
         except Exception as e:
             logger.error(f"Failed to load spec from {source.url}: {e}.")
             if fail_on_missing_source:
-                raise click.ClickException(
-                    f"Failed to load spec from {source.url}: {e}."
-                )
+                raise click.ClickException(f"Failed to load spec from {source.url}: {e}.") from e
             logger.info("Skipping this source and continuing with the next one.")
             continue
         else:
@@ -84,7 +82,7 @@ def generate(config_file: str, output_file: str, fail_on_missing_source: bool):
         new_paths: dict[str, Any] = {}
         for path, path_definition in other.setdefault("paths", {}).items():
             # Extract the operations from the path definition and retag if necessary
-            operations = dict(source.operations_filter(path_definition))
+            operations: dict[str, Any] = dict(source.operations_filter(path_definition))
             if not operations:
                 # no matching ops found
                 continue
@@ -94,7 +92,7 @@ def generate(config_file: str, output_file: str, fail_on_missing_source: bool):
                 for op_def in operations.values():
                     op_def["tags"] = list(source.tags)
 
-            # carry over any servers you want at the path‐level
+            # carry over any servers you want at the path-level
             if source.servers:
                 operations.setdefault("servers", []).extend(source.servers)
 
@@ -130,9 +128,7 @@ def generate(config_file: str, output_file: str, fail_on_missing_source: bool):
 
 @spec.command()
 @click.option("--title", "title", default="OpenAPI Spec", help="Title of the app")
-@click.option(
-    "--spec", "spec_file", default="openapi.json", help="Path to the OpenAPI spec"
-)
+@click.option("--spec", "spec_file", default="openapi.json", help="Path to the OpenAPI spec")
 @click.option("-h", "--host", "host", default="0.0.0.0", help="Host to serve app on")
 @click.option("-p", "--port", "port", default=8000, help="Port to serve app on")
 @click.option("--base-path", "base_path", default="", help="Base path to serve the app")
@@ -151,7 +147,7 @@ def serve(
     base_path: str,
     static_dir: str,
     log_level: str,
-):
+) -> None:
     """
     Serve the OpenAPI spec as a FastAPI app.
     """

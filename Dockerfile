@@ -1,16 +1,22 @@
-FROM python:3.13-slim
+# syntax=docker/dockerfile:1
+FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update -y && apt-get upgrade -y
+ENV UV_NO_DEV=1
 
 WORKDIR /app
 
-ADD LICENSE requirements.txt ./
-RUN --mount=type=cache,target=/root/.cache/pip pip3 install -r requirements.txt
+# Install dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project
 
-ADD eodh_openapi eodh_openapi
-ADD pyproject.toml ./
+# Copy project files
+COPY . /app
+
+# Sync the project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen
 
 EXPOSE 8000
-ENTRYPOINT ["python", "-m", "eodh_openapi", "spec", "serve", "--port=8000"]
+ENTRYPOINT ["uv", "run", "--no-sync", "python", "-m", "eodh_openapi", "spec", "serve", "--port=8000"]

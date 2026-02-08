@@ -1,7 +1,7 @@
 from eodh_openapi.utils import recursive_merge
 
 
-def test_merge_spec__no_conflicts__success():
+def test_merge_spec__no_conflicts__success() -> None:
     spec = {
         "openapi": "3.1.0",
         "info": {
