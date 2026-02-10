@@ -1,6 +1,6 @@
 # UK EO DataHub OpenAPI Docs
 
-This app merges OpenAPI v3 spec docs from multiple sources and servces them as a single document.
+This app merges OpenAPI v3 spec docs from multiple sources and serves them as a single document.
 
 ## Usage
 
@@ -128,28 +128,51 @@ make run-dev
 Common commands have been included in the Makefile. To discover all options available, use the help command directly on the eodh_openapi app.
 
 ```bash
-python -m eodh_openapi spec generate --help
-python -m eodh_openapi spec serve --help
+uv run python -m eodh_openapi spec generate --help
+uv run python -m eodh_openapi spec serve --help
 ```
 
 ## Development
 
-### Release
+### Setup
 
-All official releases should be performed through GitHub by creating a release and tagging it with a tag matching the form v1.2.3. Release versions should follow semver. Keep the version in the pyproject.toml and Makefile up to date with the current release.
-
-Local release candidates can be released using the Makefile.
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management. To set up the development environment:
 
 ```bash
-make container-build
-make container-push
-# or simply
-make publish
+make setup
 ```
 
-It is advised to test container image locally before release.
+This will install all dependencies and set up pre-commit hooks.
+
+### Running Tests
 
 ```bash
-make container-build
+make testonce    # run tests once
+make test        # run tests in watch mode
+```
+
+### Code Quality
+
+```bash
+make format      # auto-format code
+make check       # run all linters and type checking
+```
+
+### Docker
+
+Build and run the container locally:
+
+```bash
+make dockerbuild
 make container-run
 ```
+
+Push to ECR:
+
+```bash
+make dockerpush
+```
+
+### Release
+
+All official releases should be performed through GitHub by creating a release and tagging it with a tag matching the form v1.2.3. Release versions should follow semver.

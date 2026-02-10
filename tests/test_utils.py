@@ -1,7 +1,7 @@
 from eodh_openapi import utils
 
 
-def test_get_nested_key__key_exists__dict_not_modified():
+def test_get_nested_key__key_exists__dict_not_modified() -> None:
     d = {"a": {"b": {"c": "value"}}}
     key = "a.b.c"
     result = utils.get_nested_key(d, key)
@@ -9,7 +9,7 @@ def test_get_nested_key__key_exists__dict_not_modified():
     assert d == {"a": {"b": {"c": "value"}}}
 
 
-def test_get_nested_key__key_does_not_exist__dict_modified():
+def test_get_nested_key__key_does_not_exist__dict_modified() -> None:
     d = {"a": {"b": {"c": "value"}}}
     key = "a.d.e"
     result = utils.get_nested_key(d, key, default="test")
@@ -17,7 +17,7 @@ def test_get_nested_key__key_does_not_exist__dict_modified():
     assert d == {"a": {"b": {"c": "value"}, "d": {"e": "test"}}}
 
 
-def test_get_nested_key__key_does_not_exist__dict_modified_empty():
+def test_get_nested_key__key_does_not_exist__dict_modified_empty() -> None:
     d = {}
     key = "a.d.e"
     result = utils.get_nested_key(d, key, default="test")
@@ -25,7 +25,7 @@ def test_get_nested_key__key_does_not_exist__dict_modified_empty():
     assert d == {"a": {"d": {"e": "test"}}}
 
 
-def test_recursive_merge__no_conflicts__success():
+def test_recursive_merge__no_conflicts__success() -> None:
     d1 = {
         "a": {"b": {"c": "value"}},
         "x": {"y": {"z": "other_value"}},
@@ -41,7 +41,7 @@ def test_recursive_merge__no_conflicts__success():
     }
 
 
-def test_recursive_merge__conflict__overwrite():
+def test_recursive_merge__conflict__overwrite() -> None:
     d1 = {
         "a": {"b": {"c": "value"}},
         "x": {"y": {"z": "other_value"}},
@@ -57,9 +57,9 @@ def test_recursive_merge__conflict__overwrite():
     }
 
 
-def test_update_tags__no_conflicts():
-    tags = [{"name": "tag1", "description": "description1"}]
-    new_tags = [{"name": "tag2", "description": "description2"}]
+def test_update_tags__no_conflicts() -> None:
+    tags: list[utils.Config.TagDefinition] = [{"name": "tag1", "description": "description1"}]
+    new_tags: list[utils.Config.TagDefinition] = [{"name": "tag2", "description": "description2"}]
     result = utils.update_tags(tags, new_tags)
     assert result == [
         {"name": "tag1", "description": "description1"},
@@ -67,9 +67,9 @@ def test_update_tags__no_conflicts():
     ]
 
 
-def test_update_tags__conflict():
-    tags = [{"name": "tag1", "description": "description1"}]
-    new_tags = [
+def test_update_tags__conflict() -> None:
+    tags: list[utils.Config.TagDefinition] = [{"name": "tag1", "description": "description1"}]
+    new_tags: list[utils.Config.TagDefinition] = [
         {"name": "tag1", "description": "new_description"},
         {"name": "tag2", "description": "description2"},
     ]
@@ -80,7 +80,7 @@ def test_update_tags__conflict():
     ]
 
 
-def test_operations_filter__filter_methods_only():
+def test_operations_filter__filter_methods_only() -> None:
     path_definition = {
         "summary": "Summary",
         "get": {"summary": "Get"},
@@ -92,7 +92,7 @@ def test_operations_filter__filter_methods_only():
     assert result == {"get": {"summary": "Get"}, "post": {"summary": "Post"}}
 
 
-def test_operations_filter__filter_tags_only():
+def test_operations_filter__filter_tags_only() -> None:
     path_definition = {
         "summary": "Summary",
         "get": {"summary": "Get", "tags": ["tag1"]},

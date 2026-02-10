@@ -2,9 +2,9 @@ import json
 import logging
 import os.path
 import re
-from collections import defaultdict
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Iterator, Optional, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 import requests
 import yaml
@@ -41,7 +41,7 @@ class Config:
             )
             tags: set[str] = field(default_factory=set)
 
-            def __call__(self, path_definition: dict) -> Iterator[tuple[str, dict]]:
+            def __call__(self, path_definition: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
                 """
                 Filter paths to only include those that have the specified tags.
                 """
@@ -58,12 +58,12 @@ class Config:
         url: str
         prefix: str = ""
         servers: list[Server] = field(default_factory=list)
-        tags: set[str] = field(default_factory=defaultdict(set))
+        tags: set[str] = field(default_factory=set)
         operations_filter: OperationsFilter = field(default_factory=OperationsFilter)
 
     class TagDefinition(TypedDict):
         name: str
-        description: str = ""
+        description: NotRequired[str]
 
     base_url: str
     merge_keys: list[str] = field(default_factory=list)
@@ -73,7 +73,7 @@ class Config:
     @staticmethod
     def load(filename: str) -> "Config":
         try:
-            with open(filename, "r") as f:
+            with open(filename) as f:
                 config_data: dict = yaml.safe_load(f)
         except FileNotFoundError:
             logging.error(f"Config file {filename} not found.")
@@ -95,15 +95,13 @@ class Config:
                 for source in config_data.get("sources", [])
             ],
             tags=[
-                Config.TagDefinition(
-                    name=tag["name"], description=tag.get("description", "")
-                )
+                Config.TagDefinition(name=tag["name"], description=tag.get("description", ""))
                 for tag in config_data.get("tags", [])
             ],
         )
 
 
-def recursive_merge(d1: dict, d2: dict, base: Optional[str] = None) -> dict:
+def recursive_merge(d1: dict[str, Any], d2: dict[str, Any], base: str | None = None) -> dict[str, Any]:
     """Recursively merge two dictionaries. Updates d1 with values from d2."""
     for key, value in d2.items():
         # Build our dotted path for logging
@@ -112,7 +110,7 @@ def recursive_merge(d1: dict, d2: dict, base: Optional[str] = None) -> dict:
         if isinstance(value, dict):
             # If d1[key] exists and is not a dict, replace it
             if key in d1 and not isinstance(d1[key], dict):
-                logger.warning(f"Overwriting non‐dict at '{path}' with a dict")
+                logger.warning(f"Overwriting non-dict at '{path}' with a dict")
                 d1[key] = {}
 
             # Now safe to recurse: ensures d1[key] is a dict
@@ -127,7 +125,7 @@ def recursive_merge(d1: dict, d2: dict, base: Optional[str] = None) -> dict:
     return d1
 
 
-def get_nested_key(d: dict, key: str, *, default: Optional[Any] = None) -> Any:
+def get_nested_key(d: dict[str, Any], key: str, *, default: object = None) -> object:
     """
     Get a key from a dictionary. The key may be nested (dot separated). If the key does
     not exist, returns the default and any parent keys will be added to the dict.
@@ -180,9 +178,7 @@ def load_file_spec(file_path: str) -> OpenAPISpec:
         raise
 
 
-def update_tags(
-    t1: list[Config.TagDefinition], t2: list[Config.TagDefinition]
-) -> list[Config.TagDefinition]:
+def update_tags(t1: Sequence[Config.TagDefinition], t2: Sequence[Config.TagDefinition]) -> list[Config.TagDefinition]:
     """
     Update t1 tags from t2. If tag from t2 exists already in t1 (name matches) then
     it will be overwritten. Otherwise the tag from t2 will be appended to t1.

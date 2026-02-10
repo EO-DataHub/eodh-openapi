@@ -1,5 +1,5 @@
 # Copyright 2024 Telespazio UK Ltd
-#    
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,14 +17,62 @@ name = "eodh-openapi"
 version = "0.1.1"
 description = "OpenAPI docs for UK EO DataHub. Merges OpenAPI docs from multiple sources into one deployment."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.13,<3.14"
+classifiers = [
+    "Programming Language :: Python :: 3.13",
+]
 dependencies = [
-    "fastapi[standard]>=0.115.12",
-    "requests>=2.32.3",
+    "click",
+    "fastapi[standard]",
+    "pyyaml",
+    "requests",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=8.3.5",
-    "ruff>=0.11.4",
+    "pre-commit",
+    "pyright",
+    "pytest",
+    "pytest-mock",
+    "pytest-watcher",
+    "pytest-xdist",
+    "ruff",
+    "validate-pyproject",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = true
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+
+[tool.ruff]
+line-length = 119
+
+[tool.ruff.lint]
+select = [
+    "E",    # Pycodestyle errors
+    "W",    # Pycodestyle warnings
+    "F",    # Pyflakes
+    "I",    # isort
+    "FAST", # FastAPI
+    "RUF",  # RUF-specific rules
+    "SIM",  # Simplifications
+    "B",    # Bugbear
+    "ANN",  # Annotations
+    "PLC",  # Pylint convention
+    "PLE",  # Pylint errors
+    "UP",   # pyupgrade
+    "FURB", # refurb
+    "PT",   # pytest
+]
+ignore = [
+    "E501",   # line too long
+    "SIM108", # ternary operator
+    "SIM103", # return bool directly
+    "B008"    # function call in default argument (incompatible with FastAPI)
 ]

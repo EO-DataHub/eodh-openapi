@@ -5,3 +5,6 @@ openapi.yaml
 __pycache__/
 dist/
 **/static/
+
+.venv/
+.pre-commit-config.yaml
