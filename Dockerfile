@@ -5,6 +5,10 @@ ENV UV_NO_DEV=1
 
 WORKDIR /app
 
+# Put the project venv first on PATH so `python -m eodh_openapi` works without `uv run`
+# (the ArgoCD deployment overrides the entrypoint with a bare `python` command).
+ENV PATH="/app/.venv/bin:$PATH"
+
 # Install dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
